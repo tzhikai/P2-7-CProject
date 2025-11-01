@@ -24,12 +24,18 @@
     <ClCompile Include="..\src\commands.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\data.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\utils.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\commands.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\data.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

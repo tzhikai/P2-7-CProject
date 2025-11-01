@@ -8,7 +8,7 @@
 
 int main() {
 	
-	char command[20];
+	char command[50];
 
 	printf("Booting up . . .\n");
 
