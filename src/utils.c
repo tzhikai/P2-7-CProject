@@ -26,9 +26,9 @@ void clean_input(char command[]) {
 	printf("After: command: %s, size: %d\n", command, strlen(command));
 
 	//change command to uppercase
-	for (int i = 0; command[i] != '\0'; i++) {
+	/*for (int i = 0; command[i] != '\0'; i++) {
 		command[i] = toupper(command[i]);
-	}
+	}*/
 
 	return;
 }

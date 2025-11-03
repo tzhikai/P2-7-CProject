@@ -25,12 +25,15 @@ int main() {
 			continue;
 		}
 
-		// end program if asked
-		if (strcmp(command, "EXIT") == 0) {
+		// end program if asked (first 4 chars = exit, case insentive)
+		if (_strnicmp(command, "EXIT", 4) == 0) {
 			break;
 		}
 
-		run_command(command);
+		// tries to find the correct function to run based on user input, run_command returns 1 if worked, 0 if failed
+		if (!run_command(command)) {
+			printf("Command given not recognised. Please try again.\n");
+		}
 
 		/*printf("Finished %s command\n", command);*/
 	}

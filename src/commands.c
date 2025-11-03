@@ -1,15 +1,27 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "commands.h"
 #include "data.h"
 
 // example open function
-void open_fn(char** file) {
-	printf("\nOpen sesame!!!\n\n");
-	printf("test:%s\n", strtok_s(NULL, " ", &file));	// here!!!
-	printf("test:%s\n", strtok_s(NULL, " ", &file));	// here!!!
+void open_fn(char* context) {
+	char *filename = strtok_s(NULL, " ", &context);
+
+	printf("filename: %s\n", filename);
+
+	FILE *file_ptr = fopen(filename, "r");
+
+	if (file_ptr == NULL) {
+		printf("File %s not found.\n", filename);
+	}
+	else {
+		printf("File found!\n");
+	}
+
+	return;
 }
 // example show all function
 void showall_fn() {
@@ -55,32 +67,41 @@ struct operation operations[] = {
 };
 
 // handles the execution of operation based on user input command
-void run_command(char command[]) {
-	// split input by space
-	//struct commandSplit split = split_command(command, 2);
-	//printf("outside:\ncommand:%s\nremainder:%s\n", split.callphrase, split.context);
-	//printf("test:%s\n", strtok_s(NULL, " ", &split.context));	// here!!!
-	//printf("test:%s\n", strtok_s(NULL, " ", &split.context));	// here!!!
+bool run_command(char command[]) {
+	// passed in command, without trailing or leading whitespaces
+	
+	char* context = NULL;
+	char* command_copy = _strdup(command);
 
-	// use pointer from split command to print rest of inputs
+	char* command_ptr = strtok_s(command_copy, " ", &context);
+	char callphrase[20] = "";
 
-	/*printf("attempting run command %s\n", command);*/
-	int size = sizeof(operations) / sizeof(operations[0]);
-	int num_extract;
+	int num_of_operations = sizeof(operations) / sizeof(operations[0]);
+	bool command_found = 0;
 
-	for (int i = 0; i < size; i++) {
-		num_extract = operations[i].wordCount;
-		struct commandSplit split = split_command(command, num_extract);	// inefficient, since it recalculates multiple times, need rethinking
-		if (strcmp(split.callphrase, operations[i].name) == 0) {	//strcmp returns 0 if equal
-			printf("result: %s\n", operations[i].name);
-			operations[i].function(split.context);
-			return;
+	// while command_ptr is not null
+	// append command_ptr to callphrase
+	// then loop thru operations with for loop
+	// check for operation equal
+	// then run
+
+	while (command_ptr && !command_found) {
+		if (callphrase[0] != '\0') {
+			strcat_s(callphrase, sizeof(callphrase), " ");
 		}
+		strcat_s(callphrase, sizeof(callphrase), command_ptr);
+		printf("checking %s\n", callphrase);
+
+		for (int i = 0; i < num_of_operations; i++) {
+			if (_stricmp(callphrase, operations[i].name) == 0) {
+				printf("%s is equal to %s\n", callphrase, operations[i].name);
+				command_found = 1;
+				operations[i].function(context);
+			}
+		}
+
+		command_ptr = strtok_s(NULL, " ", &context);
 	}
 
-	// free split.copy?
-
-	// command does not exist or misspelled
-	printf("This command %s does not exist.\n", command);
-	return;
+	return command_found;
 }

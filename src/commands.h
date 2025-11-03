@@ -1,6 +1,8 @@
 #ifndef COMMANDS_H		
 #define COMMANDS_H
 
+#include <stdbool.h>
+
 struct commandSplit {
 	char callphrase[50];	// the extracted operation from user input
 	char* context;	// points to the curr position in the command string (after extracted part)
@@ -16,10 +18,10 @@ struct operation {
 };
 
 // function prototypes
-void open_fn(char** file);	// passed in from commandSplit's context 
+void open_fn(char* filename);	// passed in from commandSplit's context 
 void showall_fn();
 
-void run_command(char command[]);
+bool run_command(char command[]);
 
 
 // external references
