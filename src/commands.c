@@ -2,23 +2,38 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <direct.h>	// for checking current working directory to see what the relative path is
 
 #include "commands.h"
 #include "data.h"
 
 // example open function
 void open_fn(char* context) {
+	//char cwd[1024];
+	//_getcwd(cwd, sizeof(cwd));  // Use getcwd() on Linux/Mac
+	//printf("Current working directory: %s\n", cwd);
+
+	if (context[0] == '\0' || context == NULL) {
+		printf("No file name detected, please try again.\n");
+		return;
+	}
+
 	char *filename = strtok_s(NULL, " ", &context);
+	char filepath[250] = "src\\";
 
-	printf("filename: %s\n", filename);
+	strcat_s(filepath, sizeof(filepath), filename);
+	printf("filepath: %s\n", filepath);
 
-	FILE *file_ptr = fopen(filename, "r");
+
+	FILE *file_ptr = fopen(filepath, "r");
+	///*FILE* file_ptr = fopen("C:\\Users\\tzhik\\OneDrive\\Documents\\SIT\\Y1T1\\INF1002 Programming Fundamentals\\C_Half\\P2_7_C_Project\\src\\CMS.txt", "r");*/
 
 	if (file_ptr == NULL) {
-		printf("File %s not found.\n", filename);
+		printf("File %s not found.\n", filepath);
 	}
 	else {
-		printf("File found!\n");
+		printf("The database file \"%s\" is successfully opened.\n", filename);
+		load_data(file_ptr);
 	}
 
 	return;
@@ -79,11 +94,6 @@ bool run_command(char command[]) {
 	int num_of_operations = sizeof(operations) / sizeof(operations[0]);
 	bool command_found = 0;
 
-	// while command_ptr is not null
-	// append command_ptr to callphrase
-	// then loop thru operations with for loop
-	// check for operation equal
-	// then run
 
 	while (command_ptr && !command_found) {
 		if (callphrase[0] != '\0') {

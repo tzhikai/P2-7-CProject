@@ -2,4 +2,12 @@
 
 #endif // !DATA_H
 
-void load_data();
+struct Student {
+	int id;					// eg 2500123
+	char name[50];			// eg Fake Name
+	char programme[50];		// eg Computer Science
+	float mark;				// eg 82.1
+};
+
+
+void load_data(FILE *file);
