@@ -7,8 +7,8 @@
 
 
 void load_data(FILE *file) {
-
-	int initial_size = sizeof(struct Student) * 5;	// allow space for 5 Student struct array members
+	int capacity = 4;
+	int initial_size = sizeof(struct Student) * capacity;	// allow space for 5 Student struct array members
 	
 	// allocate memory for initial members of StudentRecord 
 	// (needed because no. of members if decided by file input)
@@ -32,39 +32,35 @@ void load_data(FILE *file) {
 		if (line_counter <= 5) {
 			continue;
 		}
-		field_counter = 0;
-		context = NULL;
 
-		for (line_ptr = strtok_s(line_buffer, "\t", &context);	// assign line_ptr for loop condition and for use in loop
-			line_ptr;											// check if line_ptr is NULL -> means nothing else in line_buffer
-			line_ptr = strtok_s(NULL, "\t", &context))			// moves line_ptr to next word
-		{
-			printf("Line ptr: %s\n", line_ptr);
-			fields[field_counter] = line_ptr;
-			field_counter++;
-		}
+		/*if (student_index >= capacity) {
+			capacity *= 2;
+			struct Student* temp = realloc(StudentRecord, capacity);
 
-		StudentRecord[student_index].id = atoi(fields[0]);
-		strcpy_s(StudentRecord[student_index].name, sizeof(StudentRecord[student_index].name), fields[1]);
-		strcpy_s(StudentRecord[student_index].programme, sizeof(StudentRecord[student_index].programme), fields[2]);
-		StudentRecord[student_index].mark = atof(fields[3]);
+			if (temp == NULL) {
+				printf("Memory reallocation failed");
+				free(StudentRecord);
+				break;
+			}
+			else {
+				StudentRecord = temp;
+			}
+		}*/
 
+		sscanf_s(line_buffer, "%d\t%[a-zA-Z ]\t%[a-zA-Z ]\t%f", &StudentRecord[student_index].id,
+								StudentRecord[student_index].name, sizeof(StudentRecord[student_index].name),
+								StudentRecord[student_index].programme, sizeof(StudentRecord[student_index].programme),
+								&StudentRecord[student_index].mark);
+
+
+		printf("Successfully read student %d: ID=%d, Name=%s, Programme=%s, Mark=%.1f\n",
+			student_index,
+			StudentRecord[student_index].id,
+			StudentRecord[student_index].name,
+			StudentRecord[student_index].programme,
+			StudentRecord[student_index].mark);
 		student_index++;
 	}
 
-	printf("StudentRecord 1: %d\n", StudentRecord[0].id);
-	printf("StudentRecord 1: %s\n", StudentRecord[0].name);
-	printf("StudentRecord 1: %s\n", StudentRecord[0].programme);
-	printf("StudentRecord 1: %f\n", StudentRecord[0].mark);
-
-	printf("StudentRecord 1: %d\n", StudentRecord[1].id);
-	printf("StudentRecord 1: %s\n", StudentRecord[1].name);
-	printf("StudentRecord 1: %s\n", StudentRecord[1].programme);
-	printf("StudentRecord 1: %f\n", StudentRecord[1].mark);
-
-	printf("StudentRecord 1: %d\n", StudentRecord[2].id);
-	printf("StudentRecord 1: %s\n", StudentRecord[2].name);
-	printf("StudentRecord 1: %s\n", StudentRecord[2].programme);
-	printf("StudentRecord 1: %f\n", StudentRecord[2].mark);
-	return;
+	return StudentRecord;
 }

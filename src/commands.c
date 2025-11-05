@@ -34,6 +34,7 @@ void open_fn(char* context) {
 	else {
 		printf("The database file \"%s\" is successfully opened.\n", filename);
 		load_data(file_ptr);
+		fclose(file_ptr);
 	}
 
 	return;
