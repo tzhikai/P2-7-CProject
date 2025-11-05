@@ -14,12 +14,12 @@ struct commandSplit {
 struct operation {
 	char name[20];			// user input to call the fn
 	int wordCount;			// temp, will likely replace with dynamically calculating it
-	void (*function)();
+	struct Student* (*function)(char* context);
 };
 
 // function prototypes
-void open_fn(char* filename);	// passed in from commandSplit's context 
-void showall_fn();
+struct Student *open_fn(char* filename);	// context in this means filename 
+struct Student* showall_fn(char* context);
 
 bool run_command(char command[]);
 

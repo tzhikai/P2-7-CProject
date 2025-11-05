@@ -10,4 +10,4 @@ struct Student {
 };
 
 
-void load_data(FILE *file);
+struct Student* load_data(FILE *file);

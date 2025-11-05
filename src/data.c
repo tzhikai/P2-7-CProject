@@ -6,7 +6,7 @@
 
 
 
-void load_data(FILE *file) {
+struct Student *load_data(FILE *file) {
 	int capacity = 4;
 	int initial_size = sizeof(struct Student) * capacity;	// allow space for 5 Student struct array members
 	
@@ -15,14 +15,14 @@ void load_data(FILE *file) {
 	struct Student* StudentRecord = malloc(initial_size);
 	//struct Student* StudentRecord = (struct Student*)malloc(initial_size);
 
+	if (StudentRecord == NULL) {
+		printf("Memory allocation failed.\n");
+		return NULL;
+	}
+
 	int line_counter = 0;
 	char line_buffer[255];
-	char* line_ptr;
-	char* context = NULL;
 	int student_index = 0;
-
-	int field_counter = 0;
-	char* fields[10];
 
 
 	while (fgets(line_buffer, sizeof(line_buffer), file)) {

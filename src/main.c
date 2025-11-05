@@ -4,6 +4,7 @@
 
 #include "commands.h"
 #include "utils.h"
+#include "data.h"
 
 
 int main() {
@@ -11,6 +12,7 @@ int main() {
 	char command[50];
 
 	printf("Booting up . . .\n");
+
 
 	while (1) {
 		printf("What would you like to do?: ");
@@ -29,6 +31,8 @@ int main() {
 		if (_strnicmp(command, "EXIT", 4) == 0) {
 			break;
 		}
+
+		
 
 		// tries to find the correct function to run based on user input, run_command returns 1 if worked, 0 if failed
 		if (!run_command(command)) {

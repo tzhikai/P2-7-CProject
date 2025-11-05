@@ -8,14 +8,14 @@
 #include "data.h"
 
 // example open function
-void open_fn(char* context) {
+struct Student *open_fn(char* context) {
 	//char cwd[1024];
 	//_getcwd(cwd, sizeof(cwd));  // Use getcwd() on Linux/Mac
 	//printf("Current working directory: %s\n", cwd);
 
 	if (context[0] == '\0' || context == NULL) {
 		printf("No file name detected, please try again.\n");
-		return;
+		return NULL;
 	}
 
 	char *filename = strtok_s(NULL, " ", &context);
@@ -30,50 +30,19 @@ void open_fn(char* context) {
 
 	if (file_ptr == NULL) {
 		printf("File %s not found.\n", filepath);
+		return NULL;
 	}
 	else {
 		printf("The database file \"%s\" is successfully opened.\n", filename);
-		load_data(file_ptr);
+		struct Student* StudentRecord = load_data(file_ptr);
 		fclose(file_ptr);
+		return StudentRecord;
 	}
-
-	return;
 }
 // example show all function
-void showall_fn() {
-	printf("\nPretend im listing stuff!!!\n\n");
-};
-
-// num_extract eg. open = 1, show all = 2
-struct commandSplit split_command(char command[], int num_extract) {
-	struct commandSplit result = { "", NULL, NULL };	// Local, callphrase and remainder ptr buffer
-
-	int callphrase_limit = 1;	// counts until num_extract
-	//char* context = NULL;		// allows strtok_s to store its curr position within the string
-
-	result.context = NULL;
-
-	result.copy = _strdup(command);	// copy of command since strtok_s transforms its input
-	char* split_ptr = strtok_s(result.copy, " ", &result.context);
-
-	if (split_ptr == NULL) {
-		strcat_s(result.callphrase, sizeof(result.callphrase), command);
-	}
-	else {
-		while (split_ptr != NULL && callphrase_limit <= num_extract) {
-			/*printf("token: %s\n", split_cmd);*/
-			if (callphrase_limit > 1) {
-				split_ptr = strtok_s(NULL, " ", &result.context);  // NULL because strtok_s remembers the current string its tokenising
-				strcat_s(result.callphrase, sizeof(result.callphrase), " ");
-			}
-			strcat_s(result.callphrase, sizeof(result.callphrase), split_ptr);
-			callphrase_limit++;
-				
-		}
-	}
-
-	printf("within:\ncommand:%s\nremainder:%s\n", result.callphrase, result.context);
-	return result;
+struct Student* showall_fn(char* context) {
+	printf("\nPretend im listing stuff!!!%s\n\n", context);
+	return NULL;
 };
 
 // array of available commands (all new ones go in here)
@@ -107,7 +76,7 @@ bool run_command(char command[]) {
 			if (_stricmp(callphrase, operations[i].name) == 0) {
 				printf("%s is equal to %s\n", callphrase, operations[i].name);
 				command_found = 1;
-				operations[i].function(context);
+				struct Student* StudentRecord = operations[i].function(context);
 			}
 		}
 
