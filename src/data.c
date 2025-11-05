@@ -4,7 +4,16 @@
 
 #include "data.h"
 
+// static variable to store the student records data
+static struct Student* database;
 
+void set_database(struct Student* db) {
+	database = db;
+}
+
+struct Student* get_database() {
+	return database;
+}
 
 struct Student *load_data(FILE *file) {
 	int capacity = 4;

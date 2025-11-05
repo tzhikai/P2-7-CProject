@@ -1,6 +1,6 @@
 #ifndef DATA_H
 
-#endif // !DATA_H
+
 
 struct Student {
 	int id;					// eg 2500123
@@ -11,3 +11,9 @@ struct Student {
 
 
 struct Student* load_data(FILE *file);
+
+
+void set_database(struct Student* db);
+struct Student* get_database();
+
+#endif // !DATA_H

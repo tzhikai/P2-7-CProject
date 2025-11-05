@@ -8,14 +8,14 @@
 #include "data.h"
 
 // example open function
-struct Student *open_fn(char* context) {
+bool open_fn(char* context) {
 	//char cwd[1024];
 	//_getcwd(cwd, sizeof(cwd));  // Use getcwd() on Linux/Mac
 	//printf("Current working directory: %s\n", cwd);
 
 	if (context[0] == '\0' || context == NULL) {
 		printf("No file name detected, please try again.\n");
-		return NULL;
+		return false;
 	}
 
 	char *filename = strtok_s(NULL, " ", &context);
@@ -27,22 +27,39 @@ struct Student *open_fn(char* context) {
 
 	FILE *file_ptr = fopen(filepath, "r");
 	///*FILE* file_ptr = fopen("C:\\Users\\tzhik\\OneDrive\\Documents\\SIT\\Y1T1\\INF1002 Programming Fundamentals\\C_Half\\P2_7_C_Project\\src\\CMS.txt", "r");*/
-
 	if (file_ptr == NULL) {
 		printf("File %s not found.\n", filepath);
-		return NULL;
+		return false;
 	}
-	else {
-		printf("The database file \"%s\" is successfully opened.\n", filename);
-		struct Student* StudentRecord = load_data(file_ptr);
-		fclose(file_ptr);
-		return StudentRecord;
+
+	printf("The database file \"%s\" is successfully opened.\n", filename);
+	struct Student* StudentRecord = load_data(file_ptr);
+	fclose(file_ptr);
+	
+	if (StudentRecord == NULL) {
+		return false;
 	}
+
+	set_database(StudentRecord);
+	return true;
+	
 }
 // example show all function
-struct Student* showall_fn(char* context) {
-	printf("\nPretend im listing stuff!!!%s\n\n", context);
-	return NULL;
+bool showall_fn(char* context) {
+	//printf("\nPretend im listing stuff!!!%s\n\n", context);
+	
+	struct Student* StudentRecord = get_database();
+
+	if (StudentRecord == NULL) {
+		printf("No records in database.\n");
+		return false;
+	}
+	
+	printf("Here are all the records found in the table \"<insert table name>\".\n");
+	printf("test pointer: %p\n", (void*)StudentRecord);
+	printf("test stuff: %s\n", StudentRecord[0].name);
+
+	return true;
 };
 
 // array of available commands (all new ones go in here)
@@ -62,7 +79,8 @@ bool run_command(char command[]) {
 	char callphrase[20] = "";
 
 	int num_of_operations = sizeof(operations) / sizeof(operations[0]);
-	bool command_found = 0;
+	bool command_found = false;
+	bool command_success = false;
 
 
 	while (command_ptr && !command_found) {
@@ -75,13 +93,24 @@ bool run_command(char command[]) {
 		for (int i = 0; i < num_of_operations; i++) {
 			if (_stricmp(callphrase, operations[i].name) == 0) {
 				printf("%s is equal to %s\n", callphrase, operations[i].name);
-				command_found = 1;
-				struct Student* StudentRecord = operations[i].function(context);
+				command_found = true;
+				command_success = operations[i].function(context);
+
+				/*if (!command_success) {
+					printf("Command %s failed to execute properly.\n", operations[i].name);
+				}*/
+
+				break;
 			}
 		}
 
 		command_ptr = strtok_s(NULL, " ", &context);
 	}
 
-	return command_found;
+	if (!command_found) {
+		printf("Command %s not recognised. Please try again.\n", command);
+	}
+
+	free(command_copy);
+	return 0;
 }
