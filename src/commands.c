@@ -24,8 +24,8 @@ bool open_fn(char* context) {
 	strcat_s(filepath, sizeof(filepath), filename);
 	printf("filepath: %s\n", filepath);
 
-
-	FILE *file_ptr = fopen(filepath, "r");
+	FILE* file_ptr;
+	fopen_s(&file_ptr, filepath, "r");
 	///*FILE* file_ptr = fopen("C:\\Users\\tzhik\\OneDrive\\Documents\\SIT\\Y1T1\\INF1002 Programming Fundamentals\\C_Half\\P2_7_C_Project\\src\\CMS.txt", "r");*/
 	if (file_ptr == NULL) {
 		printf("File %s not found.\n", filepath);
@@ -56,8 +56,11 @@ bool showall_fn(char* context) {
 	}
 	
 	printf("Here are all the records found in the table \"<insert table name>\".\n");
-	printf("test pointer: %p\n", (void*)StudentRecord);
-	printf("test stuff: %s\n", StudentRecord[0].name);
+
+	printf("ID\tName\tProgramme\tMark\n");
+	for (int i = 0; i < 3; i++) {
+		printf("%d\t%s\t%s\t%f\n", StudentRecord[i].id, StudentRecord[i].name, StudentRecord[i].programme, StudentRecord[i].mark);
+	}
 
 	return true;
 };
@@ -88,11 +91,11 @@ bool run_command(char command[]) {
 			strcat_s(callphrase, sizeof(callphrase), " ");
 		}
 		strcat_s(callphrase, sizeof(callphrase), command_ptr);
-		printf("checking %s\n", callphrase);
+		// printf("checking %s\n", callphrase);
 
 		for (int i = 0; i < num_of_operations; i++) {
 			if (_stricmp(callphrase, operations[i].name) == 0) {
-				printf("%s is equal to %s\n", callphrase, operations[i].name);
+				// printf("%s is equal to %s\n", callphrase, operations[i].name);
 				command_found = true;
 				command_success = operations[i].function(context);
 

@@ -37,7 +37,7 @@ struct Student *load_data(FILE *file) {
 	while (fgets(line_buffer, sizeof(line_buffer), file)) {
 		//printf("Line: %s", line_buffer);
 		line_counter++;
-		printf("Line number %d\n", line_counter);
+		//printf("Line number %d\n", line_counter);
 		if (line_counter <= 5) {
 			continue;
 		}
