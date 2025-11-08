@@ -85,7 +85,8 @@ struct Database* load_data(FILE *file) {
 	}
 
 	StudentDB->memory = memory;
-	StudentDB->size = student_index + 1; //+1 because index starts from 0 (helps w looping)
+	StudentDB->size = student_index;
+	// altho index starts from 0, no need to student_index +1 cuz i student_index++ at the end of the loop anyway
 
 	return StudentDB;
 }
