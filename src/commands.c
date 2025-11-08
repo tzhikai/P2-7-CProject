@@ -50,12 +50,13 @@ bool showall_fn(char* context) {
 	//printf("\nPretend im listing stuff!!!%s\n\n", context);
 	
 	struct Database* StudentDB = get_database();
-	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
 
-	if (record == NULL) {
+	if (StudentDB == NULL) {
 		printf("No records in database.\n");
 		return false;
 	}
+
+	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
 	
 	printf("Here are all the records found in the table \"<insert table name>\".\n");
 
