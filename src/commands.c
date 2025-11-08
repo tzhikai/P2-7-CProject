@@ -10,7 +10,7 @@
 // example open function
 bool open_fn(char* context) {
 	//char cwd[1024];
-	//_getcwd(cwd, sizeof(cwd));  // Use getcwd() on Linux/Mac
+	//_getcwd(cwd, sizeof(cwd));
 	//printf("Current working directory: %s\n", cwd);
 
 	if (context[0] == '\0' || context == NULL) {

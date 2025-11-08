@@ -3,13 +3,6 @@
 
 #include <stdbool.h>
 
-struct commandSplit {
-	char callphrase[50];	// the extracted operation from user input
-	char* context;	// points to the curr position in the command string (after extracted part)
-	char* copy;		// copy of user input
-};
-
-
 // structure for the operation function
 struct operation {
 	char name[20];			// user input to call the fn
