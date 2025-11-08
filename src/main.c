@@ -8,7 +8,7 @@
 
 
 int main() {
-	
+
 	char command[50];
 
 	printf("Booting up . . .\n");
@@ -21,7 +21,7 @@ int main() {
 
 		// removes leading, trailing whitespaces (incl. \n given by fgets), makes everything uppercase
 		clean_input(command);
-		
+
 		// if user inputs nothing/only whitespace, ask again
 		if (command[0] == '\0') {
 			printf("Received empty command.\n");
@@ -33,7 +33,7 @@ int main() {
 			break;
 		}
 
-		
+
 
 		// tries to find the correct function to run based on user input, run_command returns true if worked, false if failed
 		/*if (!run_command(command)) {

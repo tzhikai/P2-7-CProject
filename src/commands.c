@@ -18,7 +18,7 @@ bool open_fn(char* context) {
 		return false;
 	}
 
-	char *filename = strtok_s(NULL, " ", &context);
+	char* filename = strtok_s(NULL, " ", &context);
 	char filepath[250] = "src\\";
 
 	strcat_s(filepath, sizeof(filepath), filename);
@@ -33,28 +33,31 @@ bool open_fn(char* context) {
 	}
 
 	printf("The database file \"%s\" is successfully opened.\n", filename);
-	struct Student* StudentRecord = load_data(file_ptr);
+	/*struct Student* StudentRecord = load_data(file_ptr);*/
+	struct Database* StudentDB = load_data(file_ptr);
 	fclose(file_ptr);
-	
-	if (StudentRecord == NULL) {
+
+	if (StudentDB->StudentRecord == NULL) {
 		return false;
 	}
 
-	set_database(StudentRecord);
+	set_database(StudentDB);
 	return true;
-	
+
 }
 // example show all function
 bool showall_fn(char* context) {
 	//printf("\nPretend im listing stuff!!!%s\n\n", context);
-	
-	struct Student* StudentRecord = get_database();
 
-	if (StudentRecord == NULL) {
+	struct Database* StudentDB = get_database();
+
+	if (StudentDB == NULL) {
 		printf("No records in database.\n");
 		return false;
 	}
-	
+
+	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
+
 	printf("Here are all the records found in the table \"<insert table name>\".\n");
 
 	printf("ID\tName\tProgramme\tMark\n");
@@ -65,16 +68,89 @@ bool showall_fn(char* context) {
 	return true;
 };
 
-// array of available commands (all new ones go in here)
+
+
+// INSERT the new students
+bool insert_fn(char* context) {
+	struct Database* StudentDB = get_database();
+	if (StudentDB == NULL) {
+		printf("CMS: Please OPEN the database first.\n");
+		return false;
+	}
+
+	struct Student newStudent;
+	printf("Enter Student ID: ");
+	scanf_s("%d", &newStudent.id);
+
+	if (find_student_by_id(StudentDB, newStudent.id) != NULL) {
+		printf("CMS: The record with ID=%d already exists.\n", newStudent.id);
+		return false;
+	}
+
+	printf("Enter Name: ");
+	scanf_s(" %[^\n]", newStudent.name, (unsigned)_countof(newStudent.name));
+	printf("Enter Programme: ");
+	scanf_s(" %[^\n]", newStudent.programme, (unsigned)_countof(newStudent.programme));
+	printf("Enter Mark: ");
+	scanf_s("%f", &newStudent.mark);
+
+	add_student(StudentDB, newStudent);
+
+	char filepath[250] = "src\\CMS.txt"; // default save path
+	save_database(StudentDB, filepath);
+	printf("CMS: Record saved automatically to %s\n", filepath);
+	return true;
+}
+
+// QUERY 
+bool query_fn(char* context) {
+	struct Database* StudentDB = get_database();
+	if (StudentDB == NULL) {
+		printf("CMS: Please OPEN the database first.\n");
+		return false;
+	}
+
+	int id;
+	printf("Enter Student ID to query: ");
+	scanf_s("%d", &id);
+
+	struct Student* student = find_student_by_id(StudentDB, id);
+	if (student == NULL) {
+		printf("CMS: The record with ID=%d does not exist.\n", id);
+		return false;
+	}
+
+	printf("CMS: The record with ID=%d is found.\n", id);
+	printf("ID\tName\tProgramme\tMark\n");
+	printf("%d\t%s\t%s\t%.2f\n",
+		student->id, student->name, student->programme, student->mark);
+	return true;
+}
+
+// SAVE the records
+bool save_fn(char* context) {
+	struct Database* StudentDB = get_database();
+	if (StudentDB == NULL) {
+		printf("CMS: Please OPEN the database first.\n");
+		return false;
+	}
+
+	char filepath[250] = "src\\CMS.txt"; // default save path
+	save_database(StudentDB, filepath);
+	return true;
+}
+
 struct operation operations[] = {
 	{"OPEN", 1, open_fn},
-	{"SHOW ALL", 2, showall_fn}
+	{"SHOW ALL", 2, showall_fn},
+	{"INSERT", 3, insert_fn},
+	{"QUERY", 4, query_fn},
+	{"SAVE", 5, save_fn}
 };
 
-// handles the execution of operation based on user input command
 bool run_command(char command[]) {
 	// passed in command, without trailing or leading whitespaces
-	
+
 	char* context = NULL;
 	char* command_copy = _strdup(command);
 

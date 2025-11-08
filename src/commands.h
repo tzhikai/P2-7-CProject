@@ -23,5 +23,3 @@ extern struct operation operations[];
 
 #endif // !COMMANDS_H
 
-
-
