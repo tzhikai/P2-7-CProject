@@ -7,7 +7,6 @@
 #include "commands.h"
 #include "data.h"
 
-// example open function
 bool open_fn(char* context) {
 	//char cwd[1024];
 	//_getcwd(cwd, sizeof(cwd));
@@ -18,22 +17,44 @@ bool open_fn(char* context) {
 		return false;
 	}
 
-	char *filename = strtok_s(NULL, " ", &context);
-	char filepath[250] = "src\\";
+	// char *filename = strtok_s(NULL, " ", &context);
+	char filepath[250] = "src\\data\\";
 
-	strcat_s(filepath, sizeof(filepath), filename);
+	//printf("ZK: test context %s\n", context);
+
+	strcat_s(filepath, sizeof(filepath), context);	// concat context gives remaining string (allows filenames w spaces)
 	printf("filepath: %s\n", filepath);
 
 	FILE* file_ptr;
 	fopen_s(&file_ptr, filepath, "r");
 	///*FILE* file_ptr = fopen("C:\\Users\\tzhik\\OneDrive\\Documents\\SIT\\Y1T1\\INF1002 Programming Fundamentals\\C_Half\\P2_7_C_Project\\src\\CMS.txt", "r");*/
+	
+	// handle possibility that file not found cuz no extension given
+	if (file_ptr == NULL && strchr(context, '.') == NULL) {
+
+		const char* extensions[] = {".txt", ".csv"};
+		int loop_amt = sizeof(extensions) / sizeof(extensions[0]);
+		
+		for (int i = 0; i < loop_amt; i++) {
+			char filepath_ext[250];	//zktodo: use snprintf?
+			strcpy_s(filepath_ext, sizeof(filepath_ext), filepath);
+			strcat_s(filepath_ext, sizeof(filepath_ext), extensions[i]);
+			fopen_s(&file_ptr, filepath_ext, "r");
+
+			if (file_ptr != NULL) {
+				printf("Missing extension, found %s instead\n", filepath_ext);
+				break;
+			}
+		}
+		
+	}
+	// if it still fails, lost cause
 	if (file_ptr == NULL) {
 		printf("File %s not found.\n", filepath);
 		return false;
 	}
 
-	printf("The database file \"%s\" is successfully opened.\n", filename);
-	/*struct Student* StudentRecord = load_data(file_ptr);*/
+	printf("The database file \"%s\" is successfully opened.\n", context);	// zktodo: show found extension here
 	struct Database* StudentDB = load_data(file_ptr);
 	fclose(file_ptr);
 	
@@ -45,7 +66,7 @@ bool open_fn(char* context) {
 	return true;
 	
 }
-// example show all function
+
 bool showall_fn(char* context) {
 	//printf("\nPretend im listing stuff!!!%s\n\n", context);
 	
