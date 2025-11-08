@@ -33,14 +33,15 @@ bool open_fn(char* context) {
 	}
 
 	printf("The database file \"%s\" is successfully opened.\n", filename);
-	struct Student* StudentRecord = load_data(file_ptr);
+	/*struct Student* StudentRecord = load_data(file_ptr);*/
+	struct Database* StudentDB = load_data(file_ptr);
 	fclose(file_ptr);
 	
-	if (StudentRecord == NULL) {
+	if (StudentDB->StudentRecord == NULL) {
 		return false;
 	}
 
-	set_database(StudentRecord);
+	set_database(StudentDB);
 	return true;
 	
 }
@@ -48,9 +49,10 @@ bool open_fn(char* context) {
 bool showall_fn(char* context) {
 	//printf("\nPretend im listing stuff!!!%s\n\n", context);
 	
-	struct Student* StudentRecord = get_database();
+	struct Database* StudentDB = get_database();
+	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
 
-	if (StudentRecord == NULL) {
+	if (record == NULL) {
 		printf("No records in database.\n");
 		return false;
 	}
@@ -59,7 +61,7 @@ bool showall_fn(char* context) {
 
 	printf("ID\tName\tProgramme\tMark\n");
 	for (int i = 0; i < 3; i++) {
-		printf("%d\t%s\t%s\t%f\n", StudentRecord[i].id, StudentRecord[i].name, StudentRecord[i].programme, StudentRecord[i].mark);
+		printf("%d\t%s\t%s\t%f\n", record[i].id, record[i].name, record[i].programme, record[i].mark);
 	}
 
 	return true;

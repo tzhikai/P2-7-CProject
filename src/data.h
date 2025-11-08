@@ -9,11 +9,16 @@ struct Student {
 	float mark;				// eg 82.1
 };
 
+struct Database {
+	struct Student* StudentRecord;	// points to Student struct array
+	int memory;						// amt of allocated memory
+	int size;						// number of students in StudentRecord
+};
 
-struct Student* load_data(FILE *file);
+struct Database* load_data(FILE *file);
 
 
-void set_database(struct Student* db);
-struct Student* get_database();
+void set_database(struct Database* db);
+struct Database* get_database();
 
 #endif // !DATA_H
