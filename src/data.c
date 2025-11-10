@@ -15,6 +15,13 @@ struct Student* get_database() {
 	return database;
 }
 
+// jaison function to get student_index to student_count
+static int student_count = 0;
+
+int studentcount() {
+	return student_count;
+}
+
 struct Student *load_data(FILE *file) {
 	int capacity = 4;
 	int initial_size = sizeof(struct Student) * capacity;	// allow space for 5 Student struct array members
@@ -32,7 +39,6 @@ struct Student *load_data(FILE *file) {
 	int line_counter = 0;
 	char line_buffer[255];
 	int student_index = 0;
-
 
 	while (fgets(line_buffer, sizeof(line_buffer), file)) {
 		//printf("Line: %s", line_buffer);
@@ -70,6 +76,6 @@ struct Student *load_data(FILE *file) {
 			StudentRecord[student_index].mark);
 		student_index++;
 	}
-
+	student_count = student_index;
 	return StudentRecord;
 }

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <direct.h>	// for checking current working directory to see what the relative path is
+#include <ctype.h>
 
 #include "commands.h"
 #include "data.h"
@@ -58,14 +59,113 @@ bool showall_fn(char* context) {
 	printf("Here are all the records found in the table \"<insert table name>\".\n");
 	printf("test pointer: %p\n", (void*)StudentRecord);
 	printf("test stuff: %s\n", StudentRecord[0].name);
-
+	// modified show all code, to test if my sort works
+	int student_count = studentcount();
+	for (int i = 0; i < student_count; i++) {
+		printf("\nStudent %d: %s", i, StudentRecord[i].name);
+		printf("\nStudent ID: %d", StudentRecord[i].id);
+		printf("\nStudent Marks: %f", StudentRecord[i].mark);
+	}
+	printf("\n");
 	return true;
 };
+
+// jaison sort function
+static int compidup(const void* a, const void* b) {
+	const struct Student* StudentA = (const struct Student*)a;
+	const struct Student* StudentB = (const struct Student*)b;
+	return StudentA->id - StudentB->id;
+}
+
+static int compiddown(const void* a, const void* b) {
+	const struct Student* StudentA = (const struct Student*)a;
+	const struct Student* StudentB = (const struct Student*)b;
+	return StudentB->id - StudentA->id;
+}
+
+static int compmarkup(const void* a, const void* b) {
+	const struct Student* StudentA = (const struct Student*)a;
+	const struct Student* StudentB = (const struct Student*)b;
+	if (StudentA->mark < StudentB->mark) return -1;
+	if (StudentA->mark > StudentB->mark) return 1;
+	return 0;
+}
+
+static int compmarkdown(const void* a, const void* b) {
+	const struct Student* StudentA = (const struct Student*)a;
+	const struct Student* StudentB = (const struct Student*)b;
+	if (StudentA->mark < StudentB->mark) return 1;
+	if (StudentA->mark > StudentB->mark) return -1;
+	return 0;
+}
+
+bool sort_fn(char* context) {
+	int sorting = 1;
+	char sortchoice[8], sortupdown[14];
+
+	// sortchoice is user input for Sorting by ID or Mark; sortupdown is user input for Sorting Ascending or Descending
+	while (sorting == 1) {
+		printf("\nSort:\nBy ID\nBy Mark\nP2_7: ");
+		fgets(sortchoice, sizeof(sortchoice), stdin);
+		printf("\n");
+		tempclean(sortchoice);
+
+		// Checks if they didn't input id or mark
+		if (strcmp(sortchoice, "ID") != 0 && strcmp(sortchoice, "MARK") != 0) {
+			printf("\nInvalid Input, please enter 'ID' or 'MARK'\n");
+			continue;
+		}
+
+		printf("Ascending or Descending?\nP2_7: ");
+		fgets(sortupdown, sizeof(sortupdown), stdin);
+		tempclean(sortupdown);
+
+		if (strcmp(sortupdown, "ASCENDING") != 0 && strcmp(sortupdown, "DESCENDING") != 0) {
+			printf("Invalid Input, please enter 'ASCENDING' or 'DESCENDING'");
+			continue;
+		}
+
+		struct Student* StudentRecord = get_database(); //struct Student and function get_database() is in data.c
+		int student_count = studentcount();
+
+		if (StudentRecord == NULL) {
+			printf("No Student Records could be found");
+			return false;
+		}
+
+		if (strcmp(sortchoice, "ID") == 0) {
+			printf("\nSorting by ID...");
+			if (strcmp(sortupdown, "ASCENDING") == 0) {
+				printf("\nSorting ID in Ascending Order...");
+				qsort(StudentRecord, student_count, sizeof(struct Student), compidup);
+			}
+			else if (strcmp(sortupdown, "DESCENDING") == 0) {
+				printf("\nSorting ID in Descending Order...");
+				qsort(StudentRecord, student_count, sizeof(struct Student), compiddown);
+			}
+		}
+		else if (strcmp(sortchoice, "MARK") == 0) {
+			printf("\nSorting by MARK...");
+			if (strcmp(sortupdown, "ASCENDING") == 0) {
+				printf("\nSorting MARK in Ascending Order...");
+				qsort(StudentRecord, student_count, sizeof(struct Student), compmarkup);
+			}
+			else if (strcmp(sortupdown, "DESCENDING") == 0) {
+				printf("\nSorting MARK in Descending Order...");
+				qsort(StudentRecord, student_count, sizeof(struct Student), compmarkdown);
+			}
+		}
+		sorting = 0;
+	}
+	printf("StudentRecord is sorted");
+	return true;
+}
 
 // array of available commands (all new ones go in here)
 struct operation operations[] = {
 	{"OPEN", 1, open_fn},
-	{"SHOW ALL", 2, showall_fn}
+	{"SHOW ALL", 2, showall_fn},
+	{"SORT", 1, sort_fn}
 };
 
 // handles the execution of operation based on user input command

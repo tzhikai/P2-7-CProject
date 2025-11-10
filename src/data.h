@@ -15,5 +15,6 @@ struct Student* load_data(FILE *file);
 
 void set_database(struct Student* db);
 struct Student* get_database();
+int studentcount();
 
 #endif // !DATA_H

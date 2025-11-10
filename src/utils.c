@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
 #include "utils.h"
 
 
@@ -30,5 +34,29 @@ void clean_input(char command[]) {
 		command[i] = toupper(command[i]);
 	}*/
 
+	return;
+}
+
+// Temporary CleanUP for sort_fn: check if it's english word, remove null terminator and Uppercase
+void tempclean(char command[]) {
+	printf("\nIssued Command: %s\n", command);
+
+	// Remove newline character
+	command[strcspn(command, "\n")] = '\0';
+
+	// Remove all spaces from the string
+	char* read_ptr = command;
+	char* write_ptr = command;
+
+	while (*read_ptr) {
+		if (!isspace((unsigned char)*read_ptr)) {
+			*write_ptr = toupper((unsigned char)*read_ptr);
+			write_ptr++;
+		}
+		read_ptr++;
+	}
+	*write_ptr = '\0';
+
+	printf("Cleaned Command: %s\n", command);
 	return;
 }
