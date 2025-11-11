@@ -43,6 +43,7 @@ bool open_fn(char* context) {
 
 			if (file_ptr != NULL) {
 				printf("Missing extension, found %s instead\n", filepath_ext);
+				strcpy_s(filepath, sizeof(filepath), filepath_ext);	// update filepath for the printf
 				break;
 			}
 		}
@@ -54,21 +55,22 @@ bool open_fn(char* context) {
 		return false;
 	}
 
-	printf("The database file \"%s\" is successfully opened.\n", context);	// zktodo: show found extension here
+	printf("The database file \"%s\" is successfully opened.\n", filepath);
 	struct Database* StudentDB = load_data(file_ptr);
 	fclose(file_ptr);
-	
+
 	if (StudentDB->StudentRecord == NULL) {
 		return false;
 	}
 
-	set_database(StudentDB);
+	strcpy_s(StudentDB->filepath, sizeof(StudentDB->filepath), filepath);	// store filepath for save fn
+
+	set_database(StudentDB);	// store in static var for access from other functions
 	return true;
 	
 }
 
 bool showall_fn(char* context) {
-	//printf("\nPretend im listing stuff!!!%s\n\n", context);
 	
 	struct Database* StudentDB = get_database();
 
@@ -92,20 +94,23 @@ bool showall_fn(char* context) {
 		for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
 			switch (StudentDB->columns[column_index].column_id) {
 				case COL_ID:
-					printf("%d\t", record[student_index].id);
+					printf("%d", record[student_index].id);
 					break;
 				case COL_NAME:
-					printf("%s\t", record[student_index].name);
+					printf("%s", record[student_index].name);
 					break;
 				case COL_PROGRAMME:
-					printf("%s\t", record[student_index].programme);
+					printf("%s", record[student_index].programme);
 					break;
 				case COL_MARK:
-					printf("%.1f\t", record[student_index].mark);
+					printf("%.1f", record[student_index].mark);
 					break;
-				case COL_OTHER:
-					printf("N/A\t");
+				case COL_OTHER:	// safety net
+					printf("N/A");
 					break;
+			}
+			if (column_index != StudentDB->column_count) {
+				printf("\t");	// \t unless end of line, though doesnt rly matter (inputs are stripped anyway)
 			}
 		}
 		printf("\n");

@@ -39,6 +39,36 @@ Columns map_column(char* header_name) {	// from header of column in input file, 
 	return COL_OTHER;
 }
 
+int validate_datapoint(char* datapoint, int column_id) {
+	switch (column_id) {
+		case COL_ID:
+			// 7 digits only, and only digits, no negative
+			// id range? no ids after current year so 26xxxxx
+			// no dupe id
+			break;
+		case COL_NAME:
+			// only letters, spaces, hyphens, apostrophes
+			// A-Za-z \- ' (no numbers, special chars)
+			// auto capitalise?
+			// consecutive spaces
+			break;
+		case COL_PROGRAMME:
+			// allowed programmes list
+			// auto capitalise?
+			// consecutive spaces
+
+			break;
+		case COL_MARK:
+			// 0.0 to 100.0 
+			// round off to closest 1dp
+			// no negative
+			// grading?
+			break;
+	}
+
+	return 0; // datapoint pass checks
+}
+
 int parse_headers(char* header_line, struct Database* StudentDB) {
 	clean_input(header_line);
 	char header_line_copy[50];
@@ -107,8 +137,11 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 		datapoint != NULL;
 		datapoint = strtok_s(NULL, "\t", &context))
 	{
+		int column_id = StudentDB->columns[column_index].column_id;
+		validate_datapoint(datapoint, column_id);
+
 		// fill in current_student data based on header mapping found
-		switch (StudentDB->columns[column_index].column_id) {
+		switch (column_id) {
 		case COL_ID:
 			sscanf_s(datapoint, "%d", &current_student->id);
 			break;

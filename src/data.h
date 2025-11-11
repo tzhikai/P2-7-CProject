@@ -22,6 +22,7 @@ struct Student {
 
 struct Database {	// zktodo: reorganise by section w comments
 	struct Student* StudentRecord;	// points to Student struct array
+	char filepath[50];				// filepath of user input (for saving)
 	int memory;						// amt of allocated memory
 	int size;						// number of students in StudentRecord
 	char tableName[20];				// table name extracted from input file
