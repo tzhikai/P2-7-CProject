@@ -9,10 +9,12 @@ struct Student {
 	float mark;				// eg 82.1
 };
 
-struct Database {
+struct Database {	// zktodo: reorganise by section w comments
 	struct Student* StudentRecord;	// points to Student struct array
 	int memory;						// amt of allocated memory
 	int size;						// number of students in StudentRecord
+	char tableName[20];				// table name extracted from input file
+	char* columns[20];					// list of all expected columns
 };
 
 struct Database* load_data(FILE *file);

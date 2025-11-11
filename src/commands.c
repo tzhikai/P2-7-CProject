@@ -79,7 +79,7 @@ bool showall_fn(char* context) {
 
 	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
 	
-	printf("Here are all the records found in the table \"<insert table name>\".\n");
+	printf("Here are all the records found in the table \"%s\".\n", StudentDB->tableName);
 
 	printf("ID\tName\tProgramme\tMark\n");
 	for (int i = 0; i < 3; i++) {

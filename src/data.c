@@ -31,13 +31,15 @@ struct Database* load_data(FILE *file) {
 	// allocate memory for initial members of StudentRecord 
 	// (needed because no. of members if decided by file input)
 	StudentDB->StudentRecord = malloc(memory);
-	
-	//struct Student* StudentRecord = (struct Student*)malloc(initial_size);
-
 	if (StudentDB->StudentRecord == NULL) {
 		printf("Memory allocation for StudentRecord failed.\n");
 		return NULL;
 	}
+	// storing expected column names for referring to later
+	StudentDB->columns[0] = "ID";
+	StudentDB->columns[1] = "Name";
+	StudentDB->columns[2] = "Programme";
+	StudentDB->columns[3] = "Mark";
 
 	int line_counter = 0;
 	char line_buffer[255];
@@ -46,12 +48,25 @@ struct Database* load_data(FILE *file) {
 	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
 
 	while (fgets(line_buffer, sizeof(line_buffer), file)) {
-		//printf("Line: %s", line_buffer);
+		//printf("Line: %s\n", line_buffer);
 		line_counter++;
 		//printf("Line number %d\n", line_counter);
+
+		if (line_counter == 4) {
+			//printf("check line 3: %s\n", line_buffer);
+			sscanf_s(line_buffer, "Table Name: %s", StudentDB->tableName, (unsigned int)sizeof(StudentDB->tableName));
+			printf("table name: %s\n", StudentDB->tableName);
+		}
+		else if (line_counter == 5) {
+			// parse headers, check against StudentDB->columns to see if all there
+			// those not there, have to track
+		}
+
 		if (line_counter <= 5) {
 			continue;
 		}
+		
+
 		// zktodo: insert code to reallocate memory if exceeds
 		/*if (student_index >= capacity) {
 			capacity *= 2;
@@ -81,6 +96,7 @@ struct Database* load_data(FILE *file) {
 			record[student_index].name,
 			record[student_index].programme,
 			record[student_index].mark);
+
 		student_index++;
 	}
 
