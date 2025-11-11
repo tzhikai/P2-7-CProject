@@ -1,6 +1,17 @@
 #ifndef DATA_H
 
+typedef enum {
+	COL_ID,
+	COL_NAME,
+	COL_PROGRAMME,
+	COL_MARK,
+	COL_OTHER
+} Columns;
 
+struct ColumnMap {
+	Columns column_id;
+	char header_name[50];
+};
 
 struct Student {
 	int id;					// eg 2500123
@@ -14,7 +25,10 @@ struct Database {	// zktodo: reorganise by section w comments
 	int memory;						// amt of allocated memory
 	int size;						// number of students in StudentRecord
 	char tableName[20];				// table name extracted from input file
-	char* columns[20];					// list of all expected columns
+	//char* columns[20];					// list of all expected columns
+	struct ColumnMap* columns;		// points to ColumnMap struct array
+	//char** column_names;			// list of column names extracted from input file (to be printed)
+	int column_count;				// amt of cols in input file
 };
 
 struct Database* load_data(FILE *file);

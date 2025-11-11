@@ -2,7 +2,7 @@ Database Name: Test_CMS
 Authors: Datta Bays
 
 Table Name: StudentRecords
-ID	Name		Programme		Mark
-2500123	John Souls	Software Engineering	70.5
-2500456	Lenny Ovo	Computer Science	63.4
-2500789	Artie Ex	Digital Supply Chain	85.9
+ID	Programme		Name		Mark
+2500123	Software Engineering	John Souls	70.5
+2500456	Computer Science	Lenny Ovo	63.4
+2500789	Digital Supply Chain	Artie Ex	85.9
