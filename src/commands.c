@@ -11,7 +11,7 @@
 // example open function
 bool open_fn(char* context) {
 	//char cwd[1024];
-	//_getcwd(cwd, sizeof(cwd));  // Use getcwd() on Linux/Mac
+	//_getcwd(cwd, sizeof(cwd));
 	//printf("Current working directory: %s\n", cwd);
 
 	if (context[0] == '\0' || context == NULL) {
@@ -25,8 +25,8 @@ bool open_fn(char* context) {
 	strcat_s(filepath, sizeof(filepath), filename);
 	printf("filepath: %s\n", filepath);
 
-
-	FILE *file_ptr = fopen(filepath, "r");
+	FILE* file_ptr;
+	fopen_s(&file_ptr, filepath, "r");
 	///*FILE* file_ptr = fopen("C:\\Users\\tzhik\\OneDrive\\Documents\\SIT\\Y1T1\\INF1002 Programming Fundamentals\\C_Half\\P2_7_C_Project\\src\\CMS.txt", "r");*/
 	if (file_ptr == NULL) {
 		printf("File %s not found.\n", filepath);
@@ -34,14 +34,15 @@ bool open_fn(char* context) {
 	}
 
 	printf("The database file \"%s\" is successfully opened.\n", filename);
-	struct Student* StudentRecord = load_data(file_ptr);
+	/*struct Student* StudentRecord = load_data(file_ptr);*/
+	struct Database* StudentDB = load_data(file_ptr);
 	fclose(file_ptr);
 	
-	if (StudentRecord == NULL) {
+	if (StudentDB->StudentRecord == NULL) {
 		return false;
 	}
 
-	set_database(StudentRecord);
+	set_database(StudentDB);
 	return true;
 	
 }
@@ -49,12 +50,14 @@ bool open_fn(char* context) {
 bool showall_fn(char* context) {
 	//printf("\nPretend im listing stuff!!!%s\n\n", context);
 	
-	struct Student* StudentRecord = get_database();
+	struct Database* StudentDB = get_database();
 
-	if (StudentRecord == NULL) {
+	if (StudentDB == NULL) {
 		printf("No records in database.\n");
 		return false;
 	}
+
+	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
 	
 	printf("Here are all the records found in the table \"<insert table name>\".\n");
 	printf("test pointer: %p\n", (void*)StudentRecord);
@@ -188,11 +191,11 @@ bool run_command(char command[]) {
 			strcat_s(callphrase, sizeof(callphrase), " ");
 		}
 		strcat_s(callphrase, sizeof(callphrase), command_ptr);
-		printf("checking %s\n", callphrase);
+		// printf("checking %s\n", callphrase);
 
 		for (int i = 0; i < num_of_operations; i++) {
 			if (_stricmp(callphrase, operations[i].name) == 0) {
-				printf("%s is equal to %s\n", callphrase, operations[i].name);
+				// printf("%s is equal to %s\n", callphrase, operations[i].name);
 				command_found = true;
 				command_success = operations[i].function(context);
 

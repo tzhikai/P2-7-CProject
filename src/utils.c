@@ -8,7 +8,7 @@
 // cleans up user input command before checking if it can be executed
 void clean_input(char command[]) {
 
-	printf("Before: command: %s, size: %d\n", command, strlen(command));
+	// printf("Before: command: %s, size: %d\n", command, strlen(command));
 
 	// loop for trailing whitespaces
 	// create a pointer to the end of the command string, move to remove whitespaces
@@ -27,12 +27,7 @@ void clean_input(char command[]) {
 		memmove(command, first_char, strlen(first_char) + 1);	// +1 to include \0
 	}
 
-	printf("After: command: %s, size: %d\n", command, strlen(command));
-
-	//change command to uppercase
-	/*for (int i = 0; command[i] != '\0'; i++) {
-		command[i] = toupper(command[i]);
-	}*/
+	// printf("After: command: %s, size: %d\n", command, strlen(command));
 
 	return;
 }

@@ -15,7 +15,8 @@ int main() {
 
 
 	while (1) {
-		printf("What would you like to do?: ");
+		//printf("What would you like to do?: ");
+		printf("P2_7: ");
 		fgets(command, sizeof(command), stdin);
 
 		// removes leading, trailing whitespaces (incl. \n given by fgets), makes everything uppercase

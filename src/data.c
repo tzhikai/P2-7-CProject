@@ -5,34 +5,44 @@
 #include "data.h"
 
 // static variable to store the student records data
-static struct Student* database;
+static struct Database* StudentDB = NULL;
 
-void set_database(struct Student* db) {
-	database = db;
+// function to call when making changes to 
+void set_database(struct Database* db) {
+	StudentDB = db;
+}
+// allow retrieval of StudentDB within other functions in the other files
+struct Database* get_database() {
+	return StudentDB;
 }
 
-struct Student* get_database() {
-	return database;
-}
-
-// jaison function to get student_index to student_count
+// jaison function to get student_index to student_count DEPRECEATED
 static int student_count = 0;
 
 int studentcount() {
 	return student_count;
 }
 
-struct Student *load_data(FILE *file) {
+struct Database* load_data(FILE *file) {
 	int capacity = 4;
-	int initial_size = sizeof(struct Student) * capacity;	// allow space for 5 Student struct array members
+	int memory = sizeof(struct Student) * capacity;	// allow space for 4 Student struct array members
 	
+	struct Database* StudentDB = malloc(sizeof(struct Database));	
+	
+	//i doubt the allocated  memory needs to change cuz the records part is a ptr
+	if (StudentDB == NULL) {
+		printf("Memory allocation for StudentDB failed\n");
+		return NULL;
+	}
+
 	// allocate memory for initial members of StudentRecord 
 	// (needed because no. of members if decided by file input)
-	struct Student* StudentRecord = malloc(initial_size);
+	StudentDB->StudentRecord = malloc(memory);
+	
 	//struct Student* StudentRecord = (struct Student*)malloc(initial_size);
 
-	if (StudentRecord == NULL) {
-		printf("Memory allocation failed.\n");
+	if (StudentDB->StudentRecord == NULL) {
+		printf("Memory allocation for StudentRecord failed.\n");
 		return NULL;
 	}
 
@@ -40,14 +50,16 @@ struct Student *load_data(FILE *file) {
 	char line_buffer[255];
 	int student_index = 0;
 
+	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
+
 	while (fgets(line_buffer, sizeof(line_buffer), file)) {
 		//printf("Line: %s", line_buffer);
 		line_counter++;
-		printf("Line number %d\n", line_counter);
+		//printf("Line number %d\n", line_counter);
 		if (line_counter <= 5) {
 			continue;
 		}
-
+		// zktodo: insert code to reallocate memory if exceeds
 		/*if (student_index >= capacity) {
 			capacity *= 2;
 			struct Student* temp = realloc(StudentRecord, capacity);
@@ -62,20 +74,26 @@ struct Student *load_data(FILE *file) {
 			}
 		}*/
 
-		sscanf_s(line_buffer, "%d\t%[a-zA-Z ]\t%[a-zA-Z ]\t%f", &StudentRecord[student_index].id,
-								StudentRecord[student_index].name, sizeof(StudentRecord[student_index].name),
-								StudentRecord[student_index].programme, sizeof(StudentRecord[student_index].programme),
-								&StudentRecord[student_index].mark);
+		// %[a-zA-Z ] = any alphabetical, case insensitive, and spaces
+		sscanf_s(line_buffer, "%d\t%[a-zA-Z ]\t%[a-zA-Z ]\t%f", 
+							&record[student_index].id,	//casting cuz sscan_f expects unsigned int
+							record[student_index].name, (unsigned int)sizeof(record[student_index].name),
+							record[student_index].programme, (unsigned int)sizeof(record[student_index].programme),
+							&record[student_index].mark);
 
 
 		printf("Successfully read student %d: ID=%d, Name=%s, Programme=%s, Mark=%.1f\n",
 			student_index,
-			StudentRecord[student_index].id,
-			StudentRecord[student_index].name,
-			StudentRecord[student_index].programme,
-			StudentRecord[student_index].mark);
+			record[student_index].id,
+			record[student_index].name,
+			record[student_index].programme,
+			record[student_index].mark);
 		student_index++;
 	}
-	student_count = student_index;
-	return StudentRecord;
+
+	StudentDB->memory = memory;
+	StudentDB->size = student_index;
+	// altho index starts from 0, no need to student_index +1 cuz i student_index++ at the end of the loop anyway
+
+	return StudentDB;
 }
