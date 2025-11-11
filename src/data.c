@@ -71,14 +71,14 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 		// map header to expected columns
 		StudentDB->columns[column_count].column_id = map_column(header);
 
-		printf("Mapped column %d: %s to id %d\n", column_count, StudentDB->columns[column_count].header_name, StudentDB->columns[column_count].column_id);
+		//printf("Mapped column %d: %s to id %d\n", column_count, StudentDB->columns[column_count].header_name, StudentDB->columns[column_count].column_id);
 		
-		switch (StudentDB->columns[column_count].column_id) {
+		/*switch (StudentDB->columns[column_count].column_id) {
 		case COL_ID: printf("ID\n"); break;
 		case COL_NAME: printf("Name\n"); break;
 		case COL_PROGRAMME: printf("Programme\n"); break;
 		case COL_MARK: printf("Mark\n"); break;
-		}
+		}*/
 
 		column_count++;
 	}
@@ -86,7 +86,7 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 	if (column_count == 0) {
 		printf("No column headers were found. Please try again.\n"); //zktodo: maybe if this is the case, default to id, name, programme, mark? (kinda lazy tho)
 	}
-
+	StudentDB->column_count = column_count;
 
 	if (StudentDB->columns == NULL) {
 		printf("Memory allocation for column mapping failed.\n");
@@ -119,12 +119,12 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 			strcpy_s(current_student->programme, strlen(datapoint) + 1, datapoint);
 			break;
 		case COL_MARK:
-			sscanf_s(datapoint, "%f.1f", &current_student->mark);
+			sscanf_s(datapoint, "%f", &current_student->mark);
 			break;
 		case COL_OTHER:
 			break;
 		}
-		printf("Parsed row %d: %s\n", column_index, datapoint);
+		//printf("Parsed row %d: %s\n", column_index, datapoint);
 		column_index++;
 	}
 

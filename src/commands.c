@@ -81,9 +81,34 @@ bool showall_fn(char* context) {
 	
 	printf("Here are all the records found in the table \"%s\".\n", StudentDB->tableName);
 
-	printf("ID\tName\tProgramme\tMark\n");
-	for (int i = 0; i < 3; i++) {
-		printf("%d\t%s\t%s\t%f\n", record[i].id, record[i].name, record[i].programme, record[i].mark);
+	// print out header row, same as input file
+	for (int i = 0; i < StudentDB->column_count; i++) {
+		printf("%s\t", StudentDB->columns[i].header_name);
+	}
+	printf("\n");
+
+	// print out the data rows, following header order
+	for (int student_index = 0; student_index < StudentDB->size; student_index++) {
+		for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
+			switch (StudentDB->columns[column_index].column_id) {
+				case COL_ID:
+					printf("%d\t", record[student_index].id);
+					break;
+				case COL_NAME:
+					printf("%s\t", record[student_index].name);
+					break;
+				case COL_PROGRAMME:
+					printf("%s\t", record[student_index].programme);
+					break;
+				case COL_MARK:
+					printf("%.1f\t", record[student_index].mark);
+					break;
+				case COL_OTHER:
+					printf("N/A\t");
+					break;
+			}
+		}
+		printf("\n");
 	}
 
 	return true;
