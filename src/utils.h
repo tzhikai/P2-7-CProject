@@ -6,7 +6,7 @@
 // function prototypes
 void clean_input(char command[]);
 void tempclean(char command[]);
-
+int countid(int command);
 
 
 #endif // !INPUT_H

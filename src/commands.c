@@ -7,6 +7,8 @@
 
 #include "commands.h"
 #include "data.h"
+#include "sort.h"
+#include "utils.h"
 
 // example open function
 bool open_fn(char* context) {
@@ -49,7 +51,7 @@ bool open_fn(char* context) {
 // example show all function
 bool showall_fn(char* context) {
 	//printf("\nPretend im listing stuff!!!%s\n\n", context);
-	
+
 	struct Database* StudentDB = get_database();
 
 	if (StudentDB == NULL) {
@@ -58,16 +60,120 @@ bool showall_fn(char* context) {
 	}
 
 	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
-	
+
+	printf("StudentDB->size: %d\n", StudentDB->size);
+
 	printf("Here are all the records found in the table \"<insert table name>\".\n");
 
 	printf("ID\tName\tProgramme\tMark\n");
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < StudentDB->size; i++) {
 		printf("%d\t%s\t%s\t%f\n", record[i].id, record[i].name, record[i].programme, record[i].mark);
 	}
 
 	return true;
 };
+
+// jaison deletee function 2501161[7] + 3 = 10
+struct Database* delete_fn(char* context) {
+	char cnfm[6], idbuffer[10];
+	int cnfmdeleting = 0, deleting = 1;
+	while (deleting == 1) {
+		printf("\nID to Delete: ");
+
+		fgets(idbuffer, sizeof(idbuffer), stdin);
+		tempclean(idbuffer); //Accept id as string for cleanup
+		//printf("\nidbuffer: %s", idbuffer);
+		int iddelete = atoi(idbuffer); //Convert string to int, if string is not integer, atoi returns 0
+		//printf("\niddelete: %d", iddelete);
+		int count = countid(iddelete); //Counts digits in userinput, if input is 0 (or atoi returns 0)
+		//printf("\ncount: %d", count);
+
+		//if digit is less/more than 7, invalid id
+		if (count != 7) {
+			printf("\nPlease enter a valid ID");
+			continue;
+		}
+
+		struct Database* StudentDB = get_database();
+
+		if (StudentDB == NULL) {
+			printf("\nNo records in database.");
+			break;
+		}
+
+		struct Student* record = StudentDB->StudentRecord;
+		struct Database* NEWdb = malloc(sizeof(struct Database));
+		NEWdb->StudentRecord = malloc(sizeof(struct Student) * (StudentDB->size - 1));
+		NEWdb->memory = sizeof(struct Database);
+		NEWdb->size = StudentDB->size - 1;
+		int newindex = 0, indexdelete = -1;
+		struct Student* NEWrecord = NEWdb->StudentRecord;
+
+		if (NEWdb == NULL) {
+			printf("\nNEWrecord Memory Allocation Failed.");
+			break;
+		}
+		if (NEWrecord == NULL) {
+			printf("NEWrecord Memory allocation for StudentRecord failed.\n");
+			break;
+		}
+
+		for (int i = 0; i < StudentDB->size; i++) {
+			if (record[i].id == iddelete) {
+				printf("\nFound record ID=%d at Index=%d", iddelete, i);
+				indexdelete = i;
+				cnfmdeleting = 1;
+				break;
+			}
+		}
+
+		if (indexdelete == -1) {
+			printf("\nThe record with ID=%d does not exist", iddelete);
+			deleting = 0;
+			break;
+		}
+
+		while (cnfmdeleting == 1) {
+			printf("\nAre you sure you want to delete record with ID=%d? Type \"Y\" to Confirm or type \"N\" to Cancel: ", iddelete);
+			fgets(cnfm, sizeof(cnfm), stdin);
+			tempclean(cnfm);
+
+			printf("\nSize of Original Database: %d", StudentDB->size);
+			printf("\nSize of New Database: %d", NEWdb->size);
+
+			if (strcmp(cnfm, "Y") == 0) {
+				for (int i = 0; i < StudentDB->size; i++) {
+					printf("\nChecking Index %d\n", i);
+					if (i == indexdelete) {
+						continue;
+					}
+					NEWrecord[newindex] = record[i];
+					newindex++;
+				}
+				for (int i = 0; i < NEWdb->size; i++) {
+					printf("%d\t%s\t%s\t%f\n",
+						NEWrecord[i].id,
+						NEWrecord[i].name,
+						NEWrecord[i].programme,
+						NEWrecord[i].mark);
+				}
+				set_database(NEWdb);
+
+				printf("\nThe record with ID=%d is successfully deleted\n", iddelete);
+				cnfmdeleting = 0;
+			}
+			else if (strcmp(cnfm, "N") == 0) {
+				printf("\nThe deletion is cancelled.");
+				cnfmdeleting = 0;
+			}
+			else {
+				printf("\nPlease enter either 'Y' or 'N'");
+			}
+		}
+		deleting = 0;
+		return NEWdb;
+		}
+}
 
 // jaison sort function
 
@@ -77,7 +183,7 @@ bool sort_fn(char* context) {
 
 	// sortchoice is user input for Sorting by ID or Mark; sortupdown is user input for Sorting Ascending or Descending
 	while (sorting == 1) {
-		printf("\nSort:\nBy ID\nBy Mark\nP2_7: ");
+		printf("Sort:\nBy ID\nBy Mark\nP2_7: ");
 		fgets(sortchoice, sizeof(sortchoice), stdin);
 		printf("\n");
 		tempclean(sortchoice);
@@ -137,7 +243,8 @@ bool sort_fn(char* context) {
 struct operation operations[] = {
 	{"OPEN", 1, open_fn},
 	{"SHOW ALL", 2, showall_fn},
-	{"SORT", 1, sort_fn}
+	{"SORT", 1, sort_fn},
+	{"DELETE", 1, delete_fn}
 };
 
 // handles the execution of operation based on user input command

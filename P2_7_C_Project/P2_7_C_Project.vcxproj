@@ -22,11 +22,13 @@
     <ClCompile Include="..\src\commands.c" />
     <ClCompile Include="..\src\data.c" />
     <ClCompile Include="..\src\main.c" />
+    <ClCompile Include="..\src\sort.c" />
     <ClCompile Include="..\src\utils.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\commands.h" />
     <ClInclude Include="..\src\data.h" />
+    <ClInclude Include="..\src\sort.h" />
     <ClInclude Include="..\src\utils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

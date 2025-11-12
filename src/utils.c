@@ -34,7 +34,7 @@ void clean_input(char command[]) {
 
 // Temporary CleanUP for sort_fn: check if it's english word, remove null terminator and Uppercase
 void tempclean(char command[]) {
-	printf("\nIssued Command: %s\n", command);
+	printf("\nIssued Command: %s", command);
 
 	// Remove newline character
 	command[strcspn(command, "\n")] = '\0';
@@ -52,6 +52,23 @@ void tempclean(char command[]) {
 	}
 	*write_ptr = '\0';
 
-	printf("Cleaned Command: %s\n", command);
+	printf("\nCleaned Command: %s", command);
 	return;
+}
+
+// Counts digits of positive or negative integer by division of 10, returns 1 if 0
+int countid(int command) {
+	int count = 0;
+
+	command = abs(command);
+
+	if (command == 0) {
+		return 1;
+	}
+
+	while (command > 0) {
+		command /= 10;
+		count++;
+	}
+	return count;
 }
