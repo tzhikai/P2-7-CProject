@@ -19,10 +19,6 @@ struct Database* get_database() {
 // jaison function to get student_index to student_count DEPRECEATED
 static int student_count = 0;
 
-int studentcount() {
-	return student_count;
-}
-
 struct Database* load_data(FILE *file) {
 	int capacity = 4;
 	int memory = sizeof(struct Student) * capacity;	// allow space for 4 Student struct array members

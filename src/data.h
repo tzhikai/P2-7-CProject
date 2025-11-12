@@ -1,7 +1,6 @@
 #ifndef DATA_H
 
 
-
 struct Student {
 	int id;					// eg 2500123
 	char name[50];			// eg Fake Name

@@ -60,47 +60,16 @@ bool showall_fn(char* context) {
 	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
 	
 	printf("Here are all the records found in the table \"<insert table name>\".\n");
-	printf("test pointer: %p\n", (void*)StudentRecord);
-	printf("test stuff: %s\n", StudentRecord[0].name);
-	// modified show all code, to test if my sort works
-	int student_count = studentcount();
-	for (int i = 0; i < student_count; i++) {
-		printf("\nStudent %d: %s", i, StudentRecord[i].name);
-		printf("\nStudent ID: %d", StudentRecord[i].id);
-		printf("\nStudent Marks: %f", StudentRecord[i].mark);
+
+	printf("ID\tName\tProgramme\tMark\n");
+	for (int i = 0; i < 3; i++) {
+		printf("%d\t%s\t%s\t%f\n", record[i].id, record[i].name, record[i].programme, record[i].mark);
 	}
-	printf("\n");
+
 	return true;
 };
 
 // jaison sort function
-static int compidup(const void* a, const void* b) {
-	const struct Student* StudentA = (const struct Student*)a;
-	const struct Student* StudentB = (const struct Student*)b;
-	return StudentA->id - StudentB->id;
-}
-
-static int compiddown(const void* a, const void* b) {
-	const struct Student* StudentA = (const struct Student*)a;
-	const struct Student* StudentB = (const struct Student*)b;
-	return StudentB->id - StudentA->id;
-}
-
-static int compmarkup(const void* a, const void* b) {
-	const struct Student* StudentA = (const struct Student*)a;
-	const struct Student* StudentB = (const struct Student*)b;
-	if (StudentA->mark < StudentB->mark) return -1;
-	if (StudentA->mark > StudentB->mark) return 1;
-	return 0;
-}
-
-static int compmarkdown(const void* a, const void* b) {
-	const struct Student* StudentA = (const struct Student*)a;
-	const struct Student* StudentB = (const struct Student*)b;
-	if (StudentA->mark < StudentB->mark) return 1;
-	if (StudentA->mark > StudentB->mark) return -1;
-	return 0;
-}
 
 bool sort_fn(char* context) {
 	int sorting = 1;
@@ -128,10 +97,10 @@ bool sort_fn(char* context) {
 			continue;
 		}
 
-		struct Student* StudentRecord = get_database(); //struct Student and function get_database() is in data.c
-		int student_count = studentcount();
+		struct Database* StudentDB = get_database(); //struct Student and function get_database() is in data.c
+		//int student_count = studentcount(); Old code 
 
-		if (StudentRecord == NULL) {
+		if (StudentDB == NULL) {
 			printf("No Student Records could be found");
 			return false;
 		}
@@ -140,22 +109,22 @@ bool sort_fn(char* context) {
 			printf("\nSorting by ID...");
 			if (strcmp(sortupdown, "ASCENDING") == 0) {
 				printf("\nSorting ID in Ascending Order...");
-				qsort(StudentRecord, student_count, sizeof(struct Student), compidup);
+				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compidup);
 			}
 			else if (strcmp(sortupdown, "DESCENDING") == 0) {
 				printf("\nSorting ID in Descending Order...");
-				qsort(StudentRecord, student_count, sizeof(struct Student), compiddown);
+				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compiddown);
 			}
 		}
 		else if (strcmp(sortchoice, "MARK") == 0) {
 			printf("\nSorting by MARK...");
 			if (strcmp(sortupdown, "ASCENDING") == 0) {
 				printf("\nSorting MARK in Ascending Order...");
-				qsort(StudentRecord, student_count, sizeof(struct Student), compmarkup);
+				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compmarkup);
 			}
 			else if (strcmp(sortupdown, "DESCENDING") == 0) {
 				printf("\nSorting MARK in Descending Order...");
-				qsort(StudentRecord, student_count, sizeof(struct Student), compmarkdown);
+				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compmarkdown);
 			}
 		}
 		sorting = 0;
