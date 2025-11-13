@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <direct.h>	// for checking current working directory to see what the relative path is
+#include <float.h> // Needed for FLT_MAX and FLT_MIN
 
 #include "commands.h"
 #include "data.h"
@@ -68,10 +69,88 @@ bool showall_fn(char* context) {
 	return true;
 };
 
+bool save_fn(char* context) {
+	struct Database* StudentDB = get_database();
+	if (StudentDB == NULL) {
+		printf("CMS: No database loaded. Please OPEN one first.\n");
+		return false;
+	}
+
+	saveDatabase("src\\CMS.txt"); // Adjust path if needed
+	return true;
+}
+
+bool summary_fn(char* context) {
+	struct Database* StudentDB = get_database();
+	if (StudentDB == NULL) {
+		printf("CMS: No database loaded. Please OPEN one first.\n");
+		return false;
+	}
+
+	showSummary();
+	return true;
+}
+
+// save function
+void saveDatabase(const char* filename) {
+	struct Database* StudentDB = get_database();
+	if (StudentDB == NULL || StudentDB->StudentRecord == NULL) {
+		printf("CMS: No database loaded.\n");
+		return;
+	}
+
+	FILE* file;
+	fopen_s(&file, filename, "w");
+	if (file == NULL) {
+		printf("CMS: Error opening file for writing.\n");
+		return;
+	}
+
+	for (int i = 0; i < StudentDB->size; i++) {
+		fprintf(file, "%d %s %s %.1f\n",
+			StudentDB->StudentRecord[i].id,
+			StudentDB->StudentRecord[i].name,
+			StudentDB->StudentRecord[i].programme,
+			StudentDB->StudentRecord[i].mark);
+	}
+
+	fclose(file);
+	printf("CMS: The database file \"%s\" is successfully saved.\n", filename);
+}
+
+//show summary
+void showSummary() {
+	struct Database* StudentDB = get_database();
+	if (StudentDB == NULL || StudentDB->size == 0) {
+		printf("CMS: No records found.\n");
+		return;
+	}
+
+	float total = 0;
+	float highest = -FLT_MAX;
+	float lowest = FLT_MAX;
+	int hiIndex = 0, loIndex = 0;
+
+	for (int i = 0; i < StudentDB->size; i++) {
+		float m = StudentDB->StudentRecord[i].mark;
+		total += m;
+		if (m > highest) { highest = m; hiIndex = i; }
+		if (m < lowest) { lowest = m; loIndex = i; }
+	}
+
+	printf("CMS: Summary Statistics\n");
+	printf("Total number of students: %d\n", StudentDB->size);
+	printf("Average mark: %.2f\n", total / StudentDB->size);
+	printf("Highest mark: %.1f (%s)\n", highest, StudentDB->StudentRecord[hiIndex].name);
+	printf("Lowest mark: %.1f (%s)\n", lowest, StudentDB->StudentRecord[loIndex].name);
+}
+
 // array of available commands (all new ones go in here)
 struct operation operations[] = {
 	{"OPEN", 1, open_fn},
-	{"SHOW ALL", 2, showall_fn}
+	{"SHOW ALL", 2, showall_fn},
+	{"SAVE", 3, save_fn},
+	{"SHOW SUMMARY", 4, summary_fn}
 };
 
 // handles the execution of operation based on user input command

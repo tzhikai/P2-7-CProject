@@ -16,6 +16,12 @@ bool showall_fn(char* context);
 
 bool run_command(char command[]);
 
+// hy test functions
+bool save_fn(char* context);
+bool summary_fn(char* context);
+void saveDatabase(const char* filename);
+void showSummary();
+
 
 // external references
 extern struct operation operations[];
