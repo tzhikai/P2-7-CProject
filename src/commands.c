@@ -81,6 +81,7 @@ bool showall_fn(char* context) {
 
 	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
 	
+	printf("%s and %s\n", StudentDB->databaseName, StudentDB->authors);
 	printf("Here are all the records found in the table \"%s\".\n", StudentDB->tableName);
 
 	// print out header row, same as input file
@@ -91,6 +92,7 @@ bool showall_fn(char* context) {
 
 	// print out the data rows, following header order
 	for (int student_index = 0; student_index < StudentDB->size; student_index++) {
+		// for each column in the row
 		for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
 			switch (StudentDB->columns[column_index].column_id) {
 				case COL_ID:

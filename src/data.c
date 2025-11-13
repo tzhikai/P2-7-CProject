@@ -56,7 +56,6 @@ int validate_datapoint(char* datapoint, int column_id) {
 			// allowed programmes list
 			// auto capitalise?
 			// consecutive spaces
-
 			break;
 		case COL_MARK:
 			// 0.0 to 100.0 
@@ -138,7 +137,10 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 		datapoint = strtok_s(NULL, "\t", &context))
 	{
 		int column_id = StudentDB->columns[column_index].column_id;
-		validate_datapoint(datapoint, column_id);
+		if (validate_datapoint(datapoint, column_id)) {
+			printf("Data point failed verification.\n");
+			continue;
+		}
 
 		// fill in current_student data based on header mapping found
 		switch (column_id) {
@@ -201,9 +203,17 @@ struct Database* load_data(FILE *file) {
 		line_counter++;
 		//printf("Line number %d\n", line_counter);
 
-		if (line_counter == 4) {
+		if (line_counter == 1) {
+			sscanf_s(line_buffer, "Database Name: %[a-zA-Z _]", StudentDB->databaseName, (unsigned int)sizeof(StudentDB->databaseName));
+			printf("table name: %s\n", StudentDB->databaseName);
+		}
+		else if (line_counter == 2) {
+			sscanf_s(line_buffer, "Authors: %[a-zA-Z _,]", StudentDB->authors, (unsigned int)sizeof(StudentDB->authors));
+			printf("table name: %s\n", StudentDB->authors);
+		}
+		else if (line_counter == 4) {
 			//printf("check line 3: %s\n", line_buffer);
-			sscanf_s(line_buffer, "Table Name: %s", StudentDB->tableName, (unsigned int)sizeof(StudentDB->tableName));
+			sscanf_s(line_buffer, "Table Name: %[a-zA-Z _]", StudentDB->tableName, (unsigned int)sizeof(StudentDB->tableName));
 			printf("table name: %s\n", StudentDB->tableName);
 		}
 		else if (line_counter == 5) {

@@ -25,6 +25,9 @@ struct Database {	// zktodo: reorganise by section w comments
 	char filepath[50];				// filepath of user input (for saving)
 	int memory;						// amt of allocated memory
 	int size;						// number of students in StudentRecord
+
+	char databaseName[20];		// database name extracted from input file
+	char authors[20];				// authors' names extracted from input file
 	char tableName[20];				// table name extracted from input file
 	//char* columns[20];					// list of all expected columns
 	struct ColumnMap* columns;		// points to ColumnMap struct array
