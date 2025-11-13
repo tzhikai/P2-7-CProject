@@ -85,32 +85,67 @@ bool showall_fn(char* context) {
 	printf("Here are all the records found in the table \"%s\".\n", StudentDB->tableName);
 
 	// print out header row, same as input file
-	for (int i = 0; i < StudentDB->column_count; i++) {
-		printf("%s\t", StudentDB->columns[i].header_name);
+	for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
+		printf("%s", StudentDB->columns[column_index].header_name);
+		//switch (StudentDB->columns[column_index].column_id) {
+		//	case COL_ID:
+		//		filler_width = 5;	// length of 7 digit id minus length of "ID"
+		//		break;
+		//	case COL_NAME:
+		//		filler_width = StudentDB->columns[column_index].max_width - strlen(StudentDB->columns[column_index].header_name);
+		//		break;
+		//	case COL_PROGRAMME:
+		//		filler_width = StudentDB->columns[column_index].max_width - strlen(StudentDB->columns[column_index].header_name);
+		//		break;
+		//	case COL_MARK:
+		//		filler_width = 1;	// length of "100.0" minus length of "MARK"
+		//		break;
+		//	case COL_OTHER:
+		//		break;
+		//}
+		int filler_width = StudentDB->columns[column_index].max_width - strlen(StudentDB->columns[column_index].header_name);
+		printf("%*s\t", filler_width, "");
 	}
 	printf("\n");
-
+	
 	// print out the data rows, following header order
 	for (int student_index = 0; student_index < StudentDB->size; student_index++) {
 		// for each column in the row
 		for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
+			int datapoint_width;
+			char mark_str[10];
+
 			switch (StudentDB->columns[column_index].column_id) {
 				case COL_ID:
 					printf("%d", record[student_index].id);
+					// ID are fixed to 7 digits, so no extra spaces here
+					//printf("%*s", StudentDB->columns[column_index].max_width - strlen(record[student_index].id), "");
+					datapoint_width = 7;	// 7 digit id
 					break;
 				case COL_NAME:
 					printf("%s", record[student_index].name);
+					//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].name)), "");
+					datapoint_width = strlen(record[student_index].name);
 					break;
 				case COL_PROGRAMME:
 					printf("%s", record[student_index].programme);
+					//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].programme)), "");
+					datapoint_width = strlen(record[student_index].programme);
 					break;
 				case COL_MARK:
 					printf("%.1f", record[student_index].mark);
+					sprintf_s(mark_str, sizeof(mark_str), "%f", &record[student_index].mark);
+					datapoint_width = strlen(mark_str);
+
+					// Mark has a max possible length of 5 (100.0)
 					break;
 				case COL_OTHER:	// safety net
 					printf("N/A");
 					break;
 			}
+
+			printf("%*s", (StudentDB->columns[column_index].max_width - datapoint_width), "");	// add spaces to align columns in print
+
 			if (column_index != StudentDB->column_count) {
 				printf("\t");	// \t unless end of line, though doesnt rly matter (inputs are stripped anyway)
 			}

@@ -9,8 +9,9 @@ typedef enum {
 } Columns;
 
 struct ColumnMap {
-	Columns column_id;
-	char header_name[50];
+	Columns column_id;			
+	char header_name[50];		
+	int max_width;				// the highest strlen of everything in the col (headers/datapoints)
 };
 
 struct Student {
@@ -40,5 +41,12 @@ struct Database* load_data(FILE *file);
 
 void set_database(struct Database* db);
 struct Database* get_database();
+
+Columns map_column(char* header_name);
+
+int validate_datapoint(char* datapoint, int column_id);
+
+int parse_headers(char* header_line, struct Database* StudentDB);
+int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* current_student);
 
 #endif // !DATA_H

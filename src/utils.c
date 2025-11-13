@@ -28,6 +28,24 @@ void clean_input(char command[]) {
 	return;
 }
 
+// removes spaces and _s within (& in front of & back of) a string (to join words tgt for comparing similar words)
 void join_words(char input[]) {
+
+	char* read_ptr = input;
+	char* write_ptr = input;
+
+	// read_ptr pointer goes thru input's memory addr
+	while (*read_ptr != '\0') {
+
+		// this rewrites write_ptr's value with read_ptr's value, but only when not _ or space
+		if ((*read_ptr != '_') && (*read_ptr != ' ')) {
+			*write_ptr++ = *read_ptr;
+		}
+
+		//write_ptr++;
+		read_ptr++;
+	}
+	// if a char was overwritten, the string needs to end early
+	*write_ptr = '\0';
 
 }

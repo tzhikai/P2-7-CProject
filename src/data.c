@@ -18,10 +18,10 @@ struct Database* get_database() {
 }
 
 Columns map_column(char* header_name) {	// from header of column in input file, figure out which StudentRecord col it corresponds to
-	clean_input(header_name);	// remove whitespaces trailing, leading
-	// zktodo: remove _ and space inside (actually maybe dn clean_input)
+	//clean_input(header_name);	// remove whitespaces trailing, leading
+	join_words(header_name);
 
-	// printf("Header name: %s\n", header_name);
+	//printf("Header name: %s\n", header_name);
 	
 	if (_stricmp(header_name, "id") == 0) {
 		return COL_ID;
@@ -83,6 +83,11 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 	StudentDB->columns = malloc(sizeof(struct ColumnMap) * column_max); // allocate memory based on no. of cols 
 	//StudentDB->column_names = malloc(sizeof(char*) * column_max);	// allocate memory based on no. of cols 
 
+	if (StudentDB->columns == NULL) {
+		printf("Memory allocation for StudentDB->columns failed.\n");
+		return 1;
+	}
+
 	// zktodo: add code for realloc if exceeds column_max
 
 	// iterate thru headers on the header_line (tab delimiter)
@@ -90,12 +95,14 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 		header != NULL;
 		header = strtok_s(NULL, "\t", &context)) 
 	{
-		// zktodo: remove _ and space inside (actually maybe dn clean_input)
 		// printf("header %d: %s\n", column_count, header);
 
 		// hold on to column headers from input file for printing later
 		//StudentDB->columns[column_count].header_name = malloc(strlen(header) + 1);	// allocate memory for each column name in header_line
 		strcpy_s(StudentDB->columns[column_count].header_name, strlen(header) + 1, header);
+
+		// store header width for deciding no. of spaces to print (will increase if any datapoints are longer)
+		StudentDB->columns[column_count].max_width = strlen(header);
 
 		// map header to expected columns
 		StudentDB->columns[column_count].column_id = map_column(header);
@@ -159,6 +166,11 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 		case COL_OTHER:
 			break;
 		}
+		// measure if saved max_width is surpassed, and edit if it is
+		if (StudentDB->columns[column_index].max_width < strlen(datapoint)) {
+			StudentDB->columns[column_index].max_width = strlen(datapoint);
+		}
+
 		//printf("Parsed row %d: %s\n", column_index, datapoint);
 		column_index++;
 	}
