@@ -118,6 +118,54 @@ void saveDatabase(const char* filename) {
 	printf("CMS: The database file \"%s\" is successfully saved.\n", filename);
 }
 
+//update
+bool update_fn(char* context) {
+	struct Database* StudentDB = get_database();
+	if (StudentDB == NULL || StudentDB->StudentRecord == NULL) {
+		printf("CMS: No database loaded. Please OPEN one first.\n");
+		return false;
+	}
+
+	int targetID;
+	printf("CMS: Enter the student ID to update: ");
+	scanf_s("%d", &targetID);
+
+	// search for the record
+	int foundIndex = -1;
+	for (int i = 0; i < StudentDB->size; i++) {
+		if (StudentDB->StudentRecord[i].id == targetID) {
+			foundIndex = i;
+			break;
+		}
+	}
+
+	if (foundIndex == -1) {
+		printf("CMS: The record with ID=%d does not exist.\n", targetID);
+		return false;
+	}
+
+	// show current data
+	printf("CMS: Record found.\n");
+	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
+		StudentDB->StudentRecord[foundIndex].id,
+		StudentDB->StudentRecord[foundIndex].name,
+		StudentDB->StudentRecord[foundIndex].programme,
+		StudentDB->StudentRecord[foundIndex].mark);
+
+	// ask for new info
+	printf("\nEnter new name (no spaces): ");
+	scanf_s("%s", StudentDB->StudentRecord[foundIndex].name, (unsigned)_countof(StudentDB->StudentRecord[foundIndex].name));
+
+	printf("Enter new programme (no spaces): ");
+	scanf_s("%s", StudentDB->StudentRecord[foundIndex].programme, (unsigned)_countof(StudentDB->StudentRecord[foundIndex].programme));
+
+	printf("Enter new mark: ");
+	scanf_s("%f", &StudentDB->StudentRecord[foundIndex].mark);
+
+	printf("CMS: The record with ID=%d is successfully updated.\n", targetID);
+	return true;
+}
+
 //show summary
 void showSummary() {
 	struct Database* StudentDB = get_database();
@@ -149,8 +197,9 @@ void showSummary() {
 struct operation operations[] = {
 	{"OPEN", 1, open_fn},
 	{"SHOW ALL", 2, showall_fn},
-	{"SAVE", 3, save_fn},
-	{"SHOW SUMMARY", 4, summary_fn}
+	{"SAVE", 1, save_fn},
+	{"SHOW SUMMARY", 2, summary_fn},
+	{ "UPDATE", 1, update_fn }
 };
 
 // handles the execution of operation based on user input command
