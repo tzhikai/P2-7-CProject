@@ -76,7 +76,7 @@ bool showall_fn(char* context) {
 // jaison deletee function 2501161[7] + 3 = 10
 struct Database* delete_fn(char* context) {
 	char cnfm[6], idbuffer[10];
-	int cnfmdeleting = 0, deleting = 1;
+	int deleting = 1;
 	while (deleting == 1) {
 		printf("\nID to Delete: ");
 
@@ -95,6 +95,7 @@ struct Database* delete_fn(char* context) {
 		}
 
 		struct Database* StudentDB = get_database();
+		int cnfmdeleting = 0;
 
 		if (StudentDB == NULL) {
 			printf("\nNo records in database.");
@@ -102,21 +103,7 @@ struct Database* delete_fn(char* context) {
 		}
 
 		struct Student* record = StudentDB->StudentRecord;
-		struct Database* NEWdb = malloc(sizeof(struct Database));
-		NEWdb->StudentRecord = malloc(sizeof(struct Student) * (StudentDB->size - 1));
-		NEWdb->memory = sizeof(struct Database);
-		NEWdb->size = StudentDB->size - 1;
-		int newindex = 0, indexdelete = -1;
-		struct Student* NEWrecord = NEWdb->StudentRecord;
-
-		if (NEWdb == NULL) {
-			printf("\nNEWrecord Memory Allocation Failed.");
-			break;
-		}
-		if (NEWrecord == NULL) {
-			printf("NEWrecord Memory allocation for StudentRecord failed.\n");
-			break;
-		}
+		int indexdelete = -1;
 
 		for (int i = 0; i < StudentDB->size; i++) {
 			if (record[i].id == iddelete) {
@@ -138,10 +125,27 @@ struct Database* delete_fn(char* context) {
 			fgets(cnfm, sizeof(cnfm), stdin);
 			tempclean(cnfm);
 
-			printf("\nSize of Original Database: %d", StudentDB->size);
-			printf("\nSize of New Database: %d", NEWdb->size);
+			//printf("\nSize of Original Database: %d", StudentDB->size);
+			//printf("\nSize of New Database: %d", NEWdb->size);
 
 			if (strcmp(cnfm, "Y") == 0) {
+				struct Database* NEWdb = malloc(sizeof(struct Database));
+				NEWdb->StudentRecord = malloc(sizeof(struct Student) * (StudentDB->size - 1));
+				NEWdb->memory = sizeof(struct Database);
+				NEWdb->size = StudentDB->size - 1;
+				int newindex = 0;
+				struct Student* NEWrecord = NEWdb->StudentRecord;
+
+				if (NEWdb == NULL) {
+					printf("\nNEWrecord Memory Allocation Failed.");
+					break;
+				}
+
+				if (NEWrecord == NULL) {
+					printf("NEWrecord Memory allocation for StudentRecord failed.\n");
+					break;
+				}
+
 				for (int i = 0; i < StudentDB->size; i++) {
 					printf("\nChecking Index %d\n", i);
 					if (i == indexdelete) {
@@ -158,21 +162,24 @@ struct Database* delete_fn(char* context) {
 						NEWrecord[i].mark);
 				}
 				set_database(NEWdb);
+				free(record);
+				free(StudentDB);
 
 				printf("\nThe record with ID=%d is successfully deleted\n", iddelete);
 				cnfmdeleting = 0;
+				deleting = 0;
+				return NEWdb;
 			}
 			else if (strcmp(cnfm, "N") == 0) {
-				printf("\nThe deletion is cancelled.");
-				cnfmdeleting = 0;
+					printf("\nThe deletion is cancelled.");
+					cnfmdeleting = 0;
+					return StudentDB;
 			}
 			else {
-				printf("\nPlease enter either 'Y' or 'N'");
+					printf("\nPlease enter either 'Y' or 'N'");
 			}
 		}
-		deleting = 0;
-		return NEWdb;
-		}
+	}
 }
 
 // jaison sort function
