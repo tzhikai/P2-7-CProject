@@ -27,3 +27,7 @@ void clean_input(char command[]) {
 
 	return;
 }
+
+void join_words(char input[]) {
+
+}

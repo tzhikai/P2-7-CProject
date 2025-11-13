@@ -186,11 +186,6 @@ struct Database* load_data(FILE *file) {
 		printf("Memory allocation for StudentRecord failed.\n");
 		return NULL;
 	}
-	// storing expected column names for referring to later
-	/*StudentDB->columns[0] = "ID";
-	StudentDB->columns[1] = "Name";
-	StudentDB->columns[2] = "Programme";
-	StudentDB->columns[3] = "Mark";*/
 
 	int line_counter = 0;
 	char line_buffer[255];
@@ -256,13 +251,6 @@ struct Database* load_data(FILE *file) {
 			record[student_index].programme,
 			record[student_index].mark);
 		}
-
-		// %[a-zA-Z ] = any alphabetical, case insensitive, and spaces
-		//sscanf_s(line_buffer, "%d\t%[a-zA-Z ]\t%[a-zA-Z ]\t%f", 
-		//					&record[student_index].id,	//casting cuz sscan_f expects unsigned int
-		//					record[student_index].name, (unsigned int)sizeof(record[student_index].name),
-		//					record[student_index].programme, (unsigned int)sizeof(record[student_index].programme),
-		//					&record[student_index].mark);
 
 		student_index++;
 	}
