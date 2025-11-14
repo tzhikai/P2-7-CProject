@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "data.h"
 #include "utils.h"
@@ -39,9 +40,93 @@ Columns map_column(char* header_name) {	// from header of column in input file, 
 	return COL_OTHER;
 }
 
+// since ID is like the primary key of the db, must be unique and correct
+int validate_id(char* id, struct Database* StudentDB) {
+	int year = 25;	// zktodo: put this in struct? or make this auto calc from curr year?
+	int id_value = atoi(id);
+
+	for (int i = 0; i < strlen(id); i++) {
+		if (!isdigit(id[i])) {
+			printf("%s has invalid characters\n", id);
+			return 1;
+		}
+	}
+
+	if (strlen(id) != 7) {		// must be 7 digits
+		printf("%s has wrong format\n", id);
+		return 1;
+	}	
+	if (id_value < 0 ||							// eg 2600000 onwards not allowed
+		id_value >= ((year + 1) * 100000)) {		
+		printf("%s has invalid value\n", id);
+		return 1;
+	}		
+
+	for (int student_index = 0; student_index < StudentDB->size; student_index++) {
+		if (StudentDB->StudentRecord[student_index].id == id_value) {
+			printf("Duplicate id! %d\n", id_value);
+			return 1;
+		}
+	}
+
+	return 0;	// passed validation checks
+}
+
+void validate_name(char* name) {
+	if (strlen(name) == 0) {
+		strcpy_s(name, sizeof(name), "N/A");
+	}
+
+	char* read_ptr = name;
+	char* write_ptr = name;
+	int capitalise_next = 1;	// start at 1 cuz first letter is capitalised
+
+	while (*read_ptr != '\0') {		
+		if (isalpha(*read_ptr) ||	// all characters typically allowed in a name
+			*read_ptr == '\'' ||
+			*read_ptr == '/' ||
+			*read_ptr == '-' ||
+			*read_ptr == ' ')
+		{
+			if (!isalpha(*read_ptr)) {	// eg John Souls, Jimtwo S/O Jim, Jim-Jim
+				capitalise_next = 1;
+			}
+
+			if (isalpha(*read_ptr)) {
+				if (capitalise_next) {
+					*write_ptr++ = toupper(*read_ptr);
+					capitalise_next = 0;
+				}
+				else {					// uncapitalise those not supposed to be cap
+					*write_ptr++ = tolower(*read_ptr);
+				}
+				
+			}
+			else if (*read_ptr == ' ' && *(read_ptr+1) == ' ') {	// throws away space if next char is also space
+				// do nothing
+			}
+			else {
+				*write_ptr++ = *read_ptr;
+			}
+			
+		}
+
+		read_ptr++;
+	}
+	*write_ptr = '\0';
+}
+
+void validate_programme(char* programme) {
+
+}
+
+void validate_mark(char* mark) {
+
+}
+
 int validate_datapoint(char* datapoint, int column_id) {
 	switch (column_id) {
-		case COL_ID:
+		case COL_ID: //zktodo: make this adapt to current year
 			// 7 digits only, and only digits, no negative
 			// id range? no ids after current year so 26xxxxx
 			// no dupe id
@@ -85,7 +170,7 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 
 	if (StudentDB->columns == NULL) {
 		printf("Memory allocation for StudentDB->columns failed.\n");
-		return 1;
+		return 1;	
 	}
 
 	// zktodo: add code for realloc if exceeds column_max
@@ -106,6 +191,8 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 
 		// map header to expected columns
 		StudentDB->columns[column_count].column_id = map_column(header);
+		/*printf("DEBUG: Column %d: header='%s' -> mapped to %d\n",
+			column_count, header, StudentDB->columns[column_count].column_id);*/
 
 		//printf("Mapped column %d: %s to id %d\n", column_count, StudentDB->columns[column_count].header_name, StudentDB->columns[column_count].column_id);
 		
@@ -121,11 +208,12 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 
 	if (column_count == 0) {
 		printf("No column headers were found. Please try again.\n"); //zktodo: maybe if this is the case, default to id, name, programme, mark? (kinda lazy tho)
+		return 1;
 	}
 	StudentDB->column_count = column_count;
 
 	if (StudentDB->columns == NULL) {
-		printf("Memory allocation for column mapping failed.\n");
+		printf("Memory allocation for column mapping failed/Columns NULL.\n");
 		return 1; // error occured
 	}
 
@@ -139,33 +227,59 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 	char* datapoint;
 	int column_index = 0;
 
+	// loop thru to test id validity
+	char dataline_copy[50];
+	strcpy_s(dataline_copy, sizeof(dataline_copy), data_line);
+	for (datapoint = strtok_s(dataline_copy, "\t", &context);
+		datapoint != NULL;
+		datapoint = strtok_s(NULL, "\t", &context))
+	{
+		clean_input(datapoint);
+		if (StudentDB->columns[column_index].column_id == COL_ID) {
+			if (validate_id(datapoint, StudentDB)) {
+				// id is invalid
+				/*printf("ID IS INVALID!\n");*/
+				return 1;
+			}
+		}
+		column_index++;
+	}
+
+	// Reset variables for actual loop thru
+	column_index = 0;
+	//datapoint = NULL;
+	context = NULL;
 	for (datapoint = strtok_s(data_line, "\t", &context);
 		datapoint != NULL;
 		datapoint = strtok_s(NULL, "\t", &context))
 	{
+		clean_input(datapoint);
 		int column_id = StudentDB->columns[column_index].column_id;
-		if (validate_datapoint(datapoint, column_id)) {
+		/*if (validate_datapoint(datapoint, column_id)) {
 			printf("Data point failed verification.\n");
 			continue;
-		}
+		}*/
 
 		// fill in current_student data based on header mapping found
 		switch (column_id) {
-		case COL_ID:
-			sscanf_s(datapoint, "%d", &current_student->id);
-			break;
-		case COL_NAME:
-			strcpy_s(current_student->name, strlen(datapoint) + 1, datapoint);
-			break;
-		case COL_PROGRAMME:
-			strcpy_s(current_student->programme, strlen(datapoint) + 1, datapoint);
-			break;
-		case COL_MARK:
-			sscanf_s(datapoint, "%f", &current_student->mark);
-			break;
-		case COL_OTHER:
-			break;
-		}
+			case COL_ID:	// no validation cuz alr done
+				sscanf_s(datapoint, "%d", &current_student->id);
+				break;
+			case COL_NAME:
+				validate_name(datapoint);
+				strcpy_s(current_student->name, strlen(datapoint) + 1, datapoint);
+				break;
+			case COL_PROGRAMME:
+				validate_programme(datapoint);
+				strcpy_s(current_student->programme, strlen(datapoint) + 1, datapoint);
+				break;
+			case COL_MARK:
+				validate_mark(datapoint);
+				sscanf_s(datapoint, "%f", &current_student->mark);
+				break;
+			case COL_OTHER:	// no validation
+				break;
+			}
 		// measure if saved max_width is surpassed, and edit if it is
 		if (StudentDB->columns[column_index].max_width < strlen(datapoint)) {
 			StudentDB->columns[column_index].max_width = strlen(datapoint);
@@ -254,6 +368,7 @@ struct Database* load_data(FILE *file) {
 
 		if (parse_datarow(line_buffer, StudentDB, &record[student_index])) {
 			printf("Error parsing data row at line %d\n", line_counter);
+			continue;	// irreparable error (id invalid)
 		}
 		else {
 			printf("Successfully read student %d: ID=%d, Name=%s, Programme=%s, Mark=%.1f\n",
@@ -265,10 +380,11 @@ struct Database* load_data(FILE *file) {
 		}
 
 		student_index++;
+		StudentDB->size = student_index;	// update every loop so validate_id can loop correctly
 	}
 
 	StudentDB->memory = memory;
-	StudentDB->size = student_index;
+	//StudentDB->size = student_index;
 	// altho index starts from 0, no need to student_index +1 cuz i student_index++ at the end of the loop anyway
 
 	return StudentDB;

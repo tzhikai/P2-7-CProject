@@ -12,6 +12,14 @@ bool open_fn(char* context) {
 	//_getcwd(cwd, sizeof(cwd));
 	//printf("Current working directory: %s\n", cwd);
 
+	struct Database* oldDB = get_database();
+	if (oldDB != NULL) {	// means open was run twice, need to free old stuff so can overwrite smoothly
+		free(oldDB->StudentRecord);
+		free(oldDB->columns);
+		free(oldDB);
+		set_database(NULL);
+	}
+
 	if (context[0] == '\0' || context == NULL) {
 		printf("No file name detected, please try again.\n");
 		return false;
@@ -112,7 +120,7 @@ bool showall_fn(char* context) {
 	for (int student_index = 0; student_index < StudentDB->size; student_index++) {
 		// for each column in the row
 		for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
-			int datapoint_width;
+			int datapoint_width = 0;
 			char mark_str[10];
 
 			switch (StudentDB->columns[column_index].column_id) {
@@ -134,19 +142,20 @@ bool showall_fn(char* context) {
 					break;
 				case COL_MARK:
 					printf("%.1f", record[student_index].mark);
-					sprintf_s(mark_str, sizeof(mark_str), "%f", &record[student_index].mark);
+					sprintf_s(mark_str, sizeof(mark_str), "%f", record[student_index].mark);
 					datapoint_width = strlen(mark_str);
 
 					// Mark has a max possible length of 5 (100.0)
 					break;
 				case COL_OTHER:	// safety net
 					printf("N/A");
+					datapoint_width = 3;
 					break;
 			}
 
 			printf("%*s", (StudentDB->columns[column_index].max_width - datapoint_width), "");	// add spaces to align columns in print
 
-			if (column_index != StudentDB->column_count) {
+			if (column_index != StudentDB->column_count - 1) {//-1 because column_index starts from 0
 				printf("\t");	// \t unless end of line, though doesnt rly matter (inputs are stripped anyway)
 			}
 		}
