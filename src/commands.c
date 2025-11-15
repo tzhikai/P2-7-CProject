@@ -10,9 +10,9 @@
 
 // example open function
 bool open_fn(char* context) {
-	//char cwd[1024];
-	//_getcwd(cwd, sizeof(cwd));
-	//printf("Current working directory: %s\n", cwd);
+	/*char cwd[1024];
+	_getcwd(cwd, sizeof(cwd));
+	printf("Current working directory: %s\n", cwd);*/
 
 	if (context[0] == '\0' || context == NULL) {
 		printf("No file name detected, please try again.\n");
@@ -128,11 +128,17 @@ bool update_fn(char* context) {
 
 	int targetID;
 	printf("CMS: Enter the student ID to update: ");
-	scanf_s("%d", &targetID);
 
-	// search for the record
-	int foundIndex = -1;
-	for (int i = 0; i < StudentDB->size; i++) {
+	// Validate ID input
+	while (scanf_s("%d", &targetID) != 1) {
+		printf("CMS: Invalid ID. Please enter a numeric student ID: ");
+		while (getchar() != '\n');
+	}
+	while (getchar() != '\n');
+
+	// ======== FIND THE RECORD ========
+	int i, foundIndex = -1;
+	for (i = 0; i < StudentDB->size; i++) {
 		if (StudentDB->StudentRecord[i].id == targetID) {
 			foundIndex = i;
 			break;
@@ -144,23 +150,76 @@ bool update_fn(char* context) {
 		return false;
 	}
 
-	// show current data
-	printf("CMS: Record found.\n");
+	struct Student* s = &StudentDB->StudentRecord[foundIndex];
+
+	printf("\nCMS: Record found.\n");
 	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
-		StudentDB->StudentRecord[foundIndex].id,
-		StudentDB->StudentRecord[foundIndex].name,
-		StudentDB->StudentRecord[foundIndex].programme,
-		StudentDB->StudentRecord[foundIndex].mark);
+		s->id, s->name, s->programme, s->mark);
 
-	// ask for new info
-	printf("\nEnter new name (no spaces): ");
-	scanf_s("%s", StudentDB->StudentRecord[foundIndex].name, (unsigned)_countof(StudentDB->StudentRecord[foundIndex].name));
+	printf("\n=== Enter New Data (Press Enter to skip a field) ===\n");
 
-	printf("Enter new programme (no spaces): ");
-	scanf_s("%s", StudentDB->StudentRecord[foundIndex].programme, (unsigned)_countof(StudentDB->StudentRecord[foundIndex].programme));
+	// ======== NAME (skip allowed) ========
+	char buffer[100];
+	printf("Enter new name (letters & spaces only, Enter = skip): ");
 
-	printf("Enter new mark: ");
-	scanf_s("%f", &StudentDB->StudentRecord[foundIndex].mark);
+	fgets(buffer, sizeof(buffer), stdin);
+
+	if (buffer[0] != '\n') { // user typed something
+		buffer[strcspn(buffer, "\n")] = 0; // remove newline
+
+		bool valid = true;
+		for (int j = 0; buffer[j] != '\0'; j++) {
+			if (!isalpha(buffer[j]) && buffer[j] != ' ') {
+				valid = false;
+				break;
+			}
+		}
+
+		if (!valid) {
+			printf("CMS: Invalid name. Update skipped for this field.\n");
+		}
+		else {
+			strcpy_s(s->name, sizeof(s->name), buffer);
+		}
+	}
+
+	// ======== PROGRAMME (skip allowed) ========
+	printf("Enter new programme (letters & spaces only, Enter = skip): ");
+	fgets(buffer, sizeof(buffer), stdin);
+
+	if (buffer[0] != '\n') {
+		buffer[strcspn(buffer, "\n")] = 0;
+
+		bool valid = true;
+		for (int j = 0; buffer[j] != '\0'; j++) {
+			if (!isalpha(buffer[j]) && buffer[j] != ' ') {
+				valid = false;
+				break;
+			}
+		}
+
+		if (!valid) {
+			printf("CMS: Invalid programme. Update skipped for this field.\n");
+		}
+		else {
+			strcpy_s(s->programme, sizeof(s->programme), buffer);
+		}
+	}
+
+	// ======== MARK (skip allowed) ========
+	printf("Enter new mark (0–100, Enter = skip): ");
+	fgets(buffer, sizeof(buffer), stdin);
+
+	if (buffer[0] != '\n') {
+		float newMark;
+
+		if (sscanf_s(buffer, "%f", &newMark) == 1 && newMark >= 0 && newMark <= 100) {
+			s->mark = newMark;
+		}
+		else {
+			printf("CMS: Invalid mark. Update skipped for this field.\n");
+		}
+	}
 
 	printf("CMS: The record with ID=%d is successfully updated.\n", targetID);
 	return true;
