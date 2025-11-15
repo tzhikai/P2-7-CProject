@@ -31,10 +31,13 @@ Columns map_column(char* header_name) {	// from header of column in input file, 
 	if (_stricmp(header_name, "name") == 0) {
 		return COL_NAME;
 	}
-	if (_stricmp(header_name, "programme") == 0) { //zktodo: add || course
+	if (_stricmp(header_name, "programme") == 0 ||
+		_stricmp(header_name, "course") == 0) {
 		return COL_PROGRAMME;
 	}
-	if (_stricmp(header_name, "mark") == 0) {	//zktodo: add || grade, score
+	if (_stricmp(header_name, "mark") == 0 ||
+		_stricmp(header_name, "marks") == 0 ||
+		_stricmp(header_name, "score") == 0) {
 		return COL_MARK;
 	}
 
@@ -173,14 +176,16 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 	char header_line_copy[50];
 	strcpy_s(header_line_copy, strlen(header_line) + 1, header_line);
 
+	int id_found = 0;
 	int column_count = 0;
 	char* context = NULL;
 	char* header;
 	// printf("header copy: %s\n", header_line_copy);
 	
-	int column_max = 6;		// initial max columns for malloc, increase if needed
+	int column_max = 4;		// initial max columns for malloc, increase if needed
 	//StudentDB->column_count = column_max;		// store for ease of looping
-	StudentDB->columns = malloc(sizeof(struct ColumnMap) * column_max); // allocate memory based on no. of cols 
+	// StudentDB->columns = malloc(sizeof(struct ColumnMap) * column_max); 
+	StudentDB->columns = calloc(column_max, sizeof(struct ColumnMap));	// allocate memory based on no. of cols 
 	//StudentDB->column_names = malloc(sizeof(char*) * column_max);	// allocate memory based on no. of cols 
 
 	if (StudentDB->columns == NULL) {
@@ -195,6 +200,22 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 		header != NULL;
 		header = strtok_s(NULL, "\t", &context)) 
 	{
+		if (column_count >= column_max) {
+			column_max *= 2;
+			struct ColumnMap* new_columns = realloc(StudentDB->columns, sizeof(struct ColumnMap) * column_max);
+
+			if (new_columns == NULL) {
+				printf("Memory reallocation for StudentDB->columns failed.\n");
+				free(StudentDB->columns);
+				return 1;
+			}
+			// move pointer over to new memory
+			StudentDB->columns = new_columns;
+
+			// 0 the new memory for the rest of the cols
+			memset(&StudentDB->columns[column_count], 0, sizeof(struct ColumnMap) * (column_max - column_count));
+		}
+
 		// printf("header %d: %s\n", column_count, header);
 
 		// hold on to column headers from input file for printing later
@@ -206,6 +227,9 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 
 		// map header to expected columns
 		StudentDB->columns[column_count].column_id = map_column(header);
+		if (StudentDB->columns[column_count].column_id == COL_ID) {
+			id_found = 1;
+		}
 		/*printf("DEBUG: Column %d: header='%s' -> mapped to %d\n",
 			column_count, header, StudentDB->columns[column_count].column_id);*/
 
@@ -219,6 +243,11 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 		}*/
 
 		column_count++;
+	}
+
+	if (!id_found) {
+		printf("No ID column found. Please try again.\n");
+		return 1;
 	}
 
 	if (column_count == 0) {
@@ -361,7 +390,8 @@ struct Database* load_data(FILE *file) {
 			// those not there, have to track
 
 			if (parse_headers(line_buffer, StudentDB)) {
-				printf("error occured\n");
+				//printf("error occured\n");
+				return NULL;
 			}
 		}
 

@@ -2,7 +2,7 @@ Database Name: Test_CMS
 Authors: Datta Bays
 
 Table Name: StudentRecords
-ID	Name		Programme		Mark
+ID	Name		Course		Score
 2500123	John Souls	Software Engineering	70.5
 3500456	Lenny Ovo	Computer Science	63.4
 25o0789	Artie Ex	Digital Supply Chain	85.9

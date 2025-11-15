@@ -34,13 +34,13 @@ bool open_fn(char* context) {
 	FILE* file_ptr;
 	fopen_s(&file_ptr, filepath, "r");
 	///*FILE* file_ptr = fopen("C:\\Users\\tzhik\\OneDrive\\Documents\\SIT\\Y1T1\\INF1002 Programming Fundamentals\\C_Half\\P2_7_C_Project\\src\\CMS.txt", "r");*/
-	
+
 	// handle possibility that file not found cuz no extension given
 	if (file_ptr == NULL && strchr(context, '.') == NULL) {
 
-		const char* extensions[] = {".txt", ".csv"};
+		const char* extensions[] = { ".txt" };	// might add .csv, but too much work, too much difference
 		int loop_amt = sizeof(extensions) / sizeof(extensions[0]);
-		
+
 		for (int i = 0; i < loop_amt; i++) {
 			char filepath_ext[250];	//zktodo: use snprintf?
 			strcpy_s(filepath_ext, sizeof(filepath_ext), filepath);
@@ -53,7 +53,7 @@ bool open_fn(char* context) {
 				break;
 			}
 		}
-		
+
 	}
 	// if it still fails, lost cause
 	if (file_ptr == NULL) {
@@ -65,7 +65,7 @@ bool open_fn(char* context) {
 	struct Database* StudentDB = load_data(file_ptr);
 	fclose(file_ptr);
 
-	if (StudentDB->StudentRecord == NULL) {
+	if (StudentDB == NULL || StudentDB->StudentRecord == NULL) {
 		return false;
 	}
 
@@ -139,13 +139,13 @@ bool showall_fn(char* context) {
 					datapoint_width = strlen(record[student_index].programme);
 					break;
 				case COL_MARK:
-					printf("%.1f", record[student_index].mark);
-					sprintf_s(mark_str, sizeof(mark_str), "%f", record[student_index].mark);
+					printf("%.1f", record[student_index].mark);	// %.1f below cuz %f gives smth like 0.000000 (width becomes too high)
+					sprintf_s(mark_str, sizeof(mark_str), "%.1f", record[student_index].mark);
 					datapoint_width = strlen(mark_str);
 
 					// Mark has a max possible length of 5 (100.0)
 					break;
-				case COL_OTHER:	// safety net
+				case COL_OTHER:	// safety net	(not printing the value cuz im currently not storing those vals)
 					printf("N/A");
 					datapoint_width = 3;
 					break;
