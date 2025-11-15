@@ -42,30 +42,38 @@ Columns map_column(char* header_name) {	// from header of column in input file, 
 }
 
 // since ID is like the primary key of the db, must be unique and correct
-int validate_id(char* id, struct Database* StudentDB) {
+int validate_id(char* id, int row_number, struct Database* StudentDB) {
 	int year = 25;	// zktodo: put this in struct? or make this auto calc from curr year?
 	int id_value = atoi(id);
 
 	for (int i = 0; i < strlen(id); i++) {
 		if (!isdigit(id[i])) {
-			printf("%s has invalid characters\n", id);
+			printf("Row %d, ID %s contains invalid character '%c'. Skipping row.\n", row_number, id, id[i]);
 			return 1;
 		}
 	}
 
 	if (strlen(id) != 7) {		// must be 7 digits
-		printf("%s has wrong format\n", id);
+		printf("Row %d, ID %s has length of %d, must be 7. Skipping row.\n", row_number, id, (int)strlen(id));
 		return 1;
 	}	
 	if (id_value < 0 ||							// eg 2600000 onwards not allowed
 		id_value >= ((year + 1) * 100000)) {		
-		printf("%s has invalid value\n", id);
+		printf("Row %d, ID %s is outside of valid ID range. Skipping row.\n", row_number, id);
 		return 1;
 	}		
 
 	for (int student_index = 0; student_index < StudentDB->size; student_index++) {
 		if (StudentDB->StudentRecord[student_index].id == id_value) {
-			printf("Duplicate id! %d\n", id_value);
+			printf("Row %d, ID %d is already in use", row_number, id_value);
+
+			// print out the name if name columns is included and name is not NULL
+			if (StudentDB->StudentRecord[student_index].name != NULL) {
+				printf(" by %s", StudentDB->StudentRecord[student_index].name);
+			}
+
+			printf(". Skipping row.\n");
+
 			return 1;
 		}
 	}
@@ -73,7 +81,9 @@ int validate_id(char* id, struct Database* StudentDB) {
 	return 0;	// passed validation checks
 }
 
-void validate_name(char* name) {
+void validate_name(char* name, int row_number) {
+
+	char* name_copy = strdup(name);
 
 	char* read_ptr = name;
 	char* write_ptr = name;
@@ -98,7 +108,6 @@ void validate_name(char* name) {
 				else {					// uncapitalise those not supposed to be cap
 					*write_ptr++ = tolower(*read_ptr);
 				}
-				
 			}
 			else if (*read_ptr == ' ' && *(read_ptr+1) == ' ') {	// throws away space if next char is also space
 				// do nothing
@@ -116,11 +125,11 @@ void validate_name(char* name) {
 	// this is last in case name is all invalid chars (eg !@#) and becomes empty
 	if (strlen(name) == 0) {
 		strcpy_s(name, sizeof(name), "N/A");
-		printf("Empty name.\n");
+		printf("Row %d, %s contains no valid characters.\n", row_number, name_copy);
 	}
 }
 
-void validate_programme(char* programme) {
+void validate_programme(char* programme, int row_number) {
 	char* valid_programmes[] = {
 		"Software Engineering",
 		"Computer Science",
@@ -135,21 +144,21 @@ void validate_programme(char* programme) {
 	}
 	if (!programme_matched) {
 		strcpy_s(programme, sizeof(programme), "N/A");
-		printf("Not a valid programme.\n");
+		printf("Row %d, programme is not valid.\n", row_number);
 	}
 }
 
-float validate_mark(char* mark) {
+float validate_mark(char* mark, int row_number) {
 	float mark_value = atof(mark);
 
 	if (strlen(mark) == 0) {
-		printf("Empty mark\n");
+		printf("Row %d, Mark is empty.\n", row_number);
 
 		return -1.0f;	// -1 is an impossible value since it falls out of range so it means invalid here
 	}
 
 	if (mark_value < 0 || mark_value > 100) {
-		printf("Mark outside of range %.1f.\n", mark_value);
+		printf("Row %d, Mark outside of range %.1f.\n", row_number, mark_value);
 
 		return -1.0f;
 	}
@@ -226,7 +235,7 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 	return 0;	// 0 means no error occured
 }
 
-int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* current_student) {
+int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* current_student, int row_number) {
 	clean_input(data_line);
 
 	char* context = NULL;
@@ -242,7 +251,7 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 	{
 		clean_input(datapoint);
 		if (StudentDB->columns[column_index].column_id == COL_ID) {
-			if (validate_id(datapoint, StudentDB)) {
+			if (validate_id(datapoint, row_number, StudentDB)) {
 				// id is invalid
 				/*printf("ID IS INVALID!\n");*/
 				return 1;
@@ -273,18 +282,16 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 				sscanf_s(datapoint, "%d", &current_student->id);
 				break;
 			case COL_NAME:
-				validate_name(datapoint);	// proper capitalisation, removes duped spaces
+				validate_name(datapoint, row_number);	// proper capitalisation, removes duped spaces
 				strcpy_s(current_student->name, strlen(datapoint) + 1, datapoint);
 				break;
 			case COL_PROGRAMME:
-				validate_name(datapoint);	// proper capitalisation, remove duped spaces as well (zktodo: change name)
-				validate_programme(datapoint);
+				validate_name(datapoint, row_number);	// proper capitalisation, remove duped spaces as well (zktodo: change name)
+				validate_programme(datapoint, row_number);
 				strcpy_s(current_student->programme, strlen(datapoint) + 1, datapoint);
 				break;
 			case COL_MARK:
-				/*temp = 
-				sscanf_s(datapoint, "%f", &current_student->mark);*/
-				current_student->mark = validate_mark(datapoint);
+				current_student->mark = validate_mark(datapoint, row_number);
 				break;
 			case COL_OTHER:	// no validation
 				break;
@@ -338,16 +345,16 @@ struct Database* load_data(FILE *file) {
 
 		if (line_counter == 1) {
 			sscanf_s(line_buffer, "Database Name: %[a-zA-Z _]", StudentDB->databaseName, (unsigned int)sizeof(StudentDB->databaseName));
-			printf("table name: %s\n", StudentDB->databaseName);
+			//printf("Database Name: %s\n", StudentDB->databaseName);
 		}
 		else if (line_counter == 2) {
 			sscanf_s(line_buffer, "Authors: %[a-zA-Z _,]", StudentDB->authors, (unsigned int)sizeof(StudentDB->authors));
-			printf("table name: %s\n", StudentDB->authors);
+			//printf("Authors: %s\n", StudentDB->authors);
 		}
 		else if (line_counter == 4) {
 			//printf("check line 3: %s\n", line_buffer);
 			sscanf_s(line_buffer, "Table Name: %[a-zA-Z _]", StudentDB->tableName, (unsigned int)sizeof(StudentDB->tableName));
-			printf("table name: %s\n", StudentDB->tableName);
+			//printf("Table Name: %s\n", StudentDB->tableName);
 		}
 		else if (line_counter == 5) {
 			// parse headers, check against StudentDB->columns to see if all there
@@ -380,8 +387,8 @@ struct Database* load_data(FILE *file) {
 			memset(&StudentDB->StudentRecord[student_index], 0, (capacity - student_index) * sizeof(struct Student));
 		}
 
-		if (parse_datarow(line_buffer, StudentDB, &StudentDB->StudentRecord[student_index])) {
-			printf("Error parsing data row at line %d\n", line_counter);
+		if (parse_datarow(line_buffer, StudentDB, &StudentDB->StudentRecord[student_index], line_counter - 5)) { //line_counter - 5 cuz row 6 is first data row
+			//printf("Error parsing data row at line %d\n", line_counter);
 			continue;	// irreparable error (id invalid)
 		}
 		else {
