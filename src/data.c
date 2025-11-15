@@ -74,10 +74,6 @@ int validate_id(char* id, struct Database* StudentDB) {
 }
 
 void validate_name(char* name) {
-	if (strlen(name) == 0) {
-		strcpy_s(name, sizeof(name), "N/A");
-		printf("Empty name.\n");
-	}
 
 	char* read_ptr = name;
 	char* write_ptr = name;
@@ -116,6 +112,12 @@ void validate_name(char* name) {
 		read_ptr++;
 	}
 	*write_ptr = '\0';
+
+	// this is last in case name is all invalid chars (eg !@#) and becomes empty
+	if (strlen(name) == 0) {
+		strcpy_s(name, sizeof(name), "N/A");
+		printf("Empty name.\n");
+	}
 }
 
 void validate_programme(char* programme) {
@@ -301,10 +303,9 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 
 
 struct Database* load_data(FILE *file) {
-	int capacity = 4;
-	int memory = sizeof(struct Student) * capacity;	// allow space for 4 Student struct array members
-	
-	struct Database* StudentDB = malloc(sizeof(struct Database));	
+
+	//struct Database* StudentDB = malloc(sizeof(struct Database));	
+	struct Database* StudentDB = calloc(1, sizeof(struct Database));	// use calloc in case any fields are read before assigning
 	
 	//i doubt the allocated  memory needs to change cuz the records part is a ptr
 	if (StudentDB == NULL) {
@@ -312,23 +313,27 @@ struct Database* load_data(FILE *file) {
 		return NULL;
 	}
 
+	int capacity = 8; // initial capacity, will increase if needed
+
 	// allocate memory for initial members of StudentRecord 
 	// (needed because no. of members if decided by file input)
-	StudentDB->StudentRecord = malloc(memory);
+	StudentDB->StudentRecord = calloc(capacity, sizeof(struct Student));
 	if (StudentDB->StudentRecord == NULL) {
 		printf("Memory allocation for StudentRecord failed.\n");
+		free_database(StudentDB);	// free this to prevent leak
 		return NULL;
 	}
+
+	StudentDB->capacity = capacity;
 
 	int line_counter = 0;
 	char line_buffer[255];
 	int student_index = 0;
 
-	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
-
 	while (fgets(line_buffer, sizeof(line_buffer), file)) {
 		//printf("Line: %s\n", line_buffer);
 		line_counter++;
+
 		//printf("Line number %d\n", line_counter);
 
 		if (line_counter == 1) {
@@ -357,42 +362,55 @@ struct Database* load_data(FILE *file) {
 			continue;
 		}
 		
+		// reallocate memory for StudentRecord if capacity gets exceeded
+		if (student_index >= capacity) {
+			capacity *= 2;	// increase limit if exceeded, times 2 seems to be standard method
+			struct Student* new_records = realloc(StudentDB->StudentRecord, capacity * sizeof(struct Student));
 
-		// zktodo: insert code to reallocate memory if exceeds
-		/*if (student_index >= capacity) {
-			capacity *= 2;
-			struct Student* temp = realloc(StudentRecord, capacity);
-
-			if (temp == NULL) {
-				printf("Memory reallocation failed");
-				free(StudentRecord);
-				break;
+			if (new_records == NULL) {
+				printf("StudentRecord memory reallocation failed!\n");
+				free_database(StudentDB);
+				return NULL;
 			}
-			else {
-				StudentRecord = temp;
-			}
-		}*/
 
-		if (parse_datarow(line_buffer, StudentDB, &record[student_index])) {
+			StudentDB->StudentRecord = new_records;	// point to new_records instead
+			StudentDB->capacity = capacity;
+
+			// 0 the new memory too
+			memset(&StudentDB->StudentRecord[student_index], 0, (capacity - student_index) * sizeof(struct Student));
+		}
+
+		if (parse_datarow(line_buffer, StudentDB, &StudentDB->StudentRecord[student_index])) {
 			printf("Error parsing data row at line %d\n", line_counter);
 			continue;	// irreparable error (id invalid)
 		}
 		else {
 			printf("Successfully read student %d: ID=%d, Name=%s, Programme=%s, Mark=%.1f\n",
 			student_index,
-			record[student_index].id,
-			record[student_index].name,
-			record[student_index].programme,
-			record[student_index].mark);
+			StudentDB->StudentRecord[student_index].id,
+			StudentDB->StudentRecord[student_index].name,
+			StudentDB->StudentRecord[student_index].programme,
+			StudentDB->StudentRecord[student_index].mark);
 		}
 
 		student_index++;
+		// altho index starts from 0, no need to student_index +1 cuz it ++s itself right above this
 		StudentDB->size = student_index;	// update every loop so validate_id can loop correctly
 	}
 
-	StudentDB->memory = memory;
 	//StudentDB->size = student_index;
-	// altho index starts from 0, no need to student_index +1 cuz i student_index++ at the end of the loop anyway
 
 	return StudentDB;
+}
+
+void free_database(struct Database* db) {
+	if (db != NULL) {
+		if (db->StudentRecord != NULL) {
+			free(db->StudentRecord);
+		}
+		if (db->columns != NULL) {
+			free(db->columns);
+		}
+		free(db);
+	}
 }

@@ -24,7 +24,7 @@ struct Student {
 struct Database {	// zktodo: reorganise by section w comments
 	struct Student* StudentRecord;	// points to Student struct array
 	char filepath[50];				// filepath of user input (for saving)
-	int memory;						// amt of allocated memory
+	int capacity;						// curr max amt of students allocated for (doubles whenever needed)
 	int size;						// number of students in StudentRecord
 
 	char databaseName[20];		// database name extracted from input file
@@ -37,14 +37,17 @@ struct Database {	// zktodo: reorganise by section w comments
 };
 
 struct Database* load_data(FILE *file);
-
+void free_database(struct Database* db);
 
 void set_database(struct Database* db);
 struct Database* get_database();
 
 Columns map_column(char* header_name);
 
-int validate_datapoint(char* datapoint, int column_id);
+int validate_id(char* id, struct Database* StudentDB);
+void validate_name(char* name);
+void validate_programme(char* programme);
+float validate_mark(char* mark);
 
 int parse_headers(char* header_line, struct Database* StudentDB);
 int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* current_student);

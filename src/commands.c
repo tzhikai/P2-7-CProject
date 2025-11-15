@@ -14,9 +14,7 @@ bool open_fn(char* context) {
 
 	struct Database* oldDB = get_database();
 	if (oldDB != NULL) {	// means open was run twice, need to free old stuff so can overwrite smoothly
-		free(oldDB->StudentRecord);
-		free(oldDB->columns);
-		free(oldDB);
+		free_database(oldDB);
 		set_database(NULL);
 	}
 
