@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "data.h"
 #include "utils.h"
@@ -75,6 +76,7 @@ int validate_id(char* id, struct Database* StudentDB) {
 void validate_name(char* name) {
 	if (strlen(name) == 0) {
 		strcpy_s(name, sizeof(name), "N/A");
+		printf("Empty name.\n");
 	}
 
 	char* read_ptr = name;
@@ -117,40 +119,42 @@ void validate_name(char* name) {
 }
 
 void validate_programme(char* programme) {
+	char* valid_programmes[] = {
+		"Software Engineering",
+		"Computer Science",
+		"Digital Supply Chain"
+	};
 
+	int programme_matched = 0;
+	for (int i = 0; i < 3 && programme_matched == 0; i++) {
+		if (_stricmp(programme, valid_programmes[i]) == 0) {
+			programme_matched = 1;
+		}
+	}
+	if (!programme_matched) {
+		strcpy_s(programme, sizeof(programme), "N/A");
+		printf("Not a valid programme.\n");
+	}
 }
 
-void validate_mark(char* mark) {
+float validate_mark(char* mark) {
+	float mark_value = atof(mark);
 
-}
+	if (strlen(mark) == 0) {
+		printf("Empty mark\n");
 
-int validate_datapoint(char* datapoint, int column_id) {
-	switch (column_id) {
-		case COL_ID: //zktodo: make this adapt to current year
-			// 7 digits only, and only digits, no negative
-			// id range? no ids after current year so 26xxxxx
-			// no dupe id
-			break;
-		case COL_NAME:
-			// only letters, spaces, hyphens, apostrophes
-			// A-Za-z \- ' (no numbers, special chars)
-			// auto capitalise?
-			// consecutive spaces
-			break;
-		case COL_PROGRAMME:
-			// allowed programmes list
-			// auto capitalise?
-			// consecutive spaces
-			break;
-		case COL_MARK:
-			// 0.0 to 100.0 
-			// round off to closest 1dp
-			// no negative
-			// grading?
-			break;
+		return -1.0f;	// -1 is an impossible value since it falls out of range so it means invalid here
 	}
 
-	return 0; // datapoint pass checks
+	if (mark_value < 0 || mark_value > 100) {
+		printf("Mark outside of range %.1f.\n", mark_value);
+
+		return -1.0f;
+	}
+
+	// round off to 1dp (*10 gets rid of first dp, round off, then /10 gives it back)
+	mark_value = roundf(mark_value * 10.0f) / 10.0f;
+	return mark_value;
 }
 
 int parse_headers(char* header_line, struct Database* StudentDB) {
@@ -228,7 +232,7 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 	int column_index = 0;
 
 	// loop thru to test id validity
-	char dataline_copy[50];
+	char dataline_copy[255];
 	strcpy_s(dataline_copy, sizeof(dataline_copy), data_line);
 	for (datapoint = strtok_s(dataline_copy, "\t", &context);
 		datapoint != NULL;
@@ -249,6 +253,7 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 	column_index = 0;
 	//datapoint = NULL;
 	context = NULL;
+	float temp;
 	for (datapoint = strtok_s(data_line, "\t", &context);
 		datapoint != NULL;
 		datapoint = strtok_s(NULL, "\t", &context))
@@ -266,16 +271,18 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 				sscanf_s(datapoint, "%d", &current_student->id);
 				break;
 			case COL_NAME:
-				validate_name(datapoint);
+				validate_name(datapoint);	// proper capitalisation, removes duped spaces
 				strcpy_s(current_student->name, strlen(datapoint) + 1, datapoint);
 				break;
 			case COL_PROGRAMME:
+				validate_name(datapoint);	// proper capitalisation, remove duped spaces as well (zktodo: change name)
 				validate_programme(datapoint);
 				strcpy_s(current_student->programme, strlen(datapoint) + 1, datapoint);
 				break;
 			case COL_MARK:
-				validate_mark(datapoint);
-				sscanf_s(datapoint, "%f", &current_student->mark);
+				/*temp = 
+				sscanf_s(datapoint, "%f", &current_student->mark);*/
+				current_student->mark = validate_mark(datapoint);
 				break;
 			case COL_OTHER:	// no validation
 				break;
