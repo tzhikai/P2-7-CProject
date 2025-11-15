@@ -33,8 +33,8 @@ void clean_input(char command[]) {
 }
 
 // Temporary CleanUP for sort_fn: check if it's english word, remove null terminator and Uppercase
-void tempclean(char command[]) {
-	printf("\nIssued Command: %s", command);
+void CleanUpper(char command[]) {
+	//printf("\nIssued Command: %s", command);
 
 	// Remove newline character
 	command[strcspn(command, "\n")] = '\0';
@@ -52,7 +52,7 @@ void tempclean(char command[]) {
 	}
 	*write_ptr = '\0';
 
-	printf("\nCleaned Command: %s", command);
+	//printf("\nCleaned Command: %s", command);
 	return;
 }
 

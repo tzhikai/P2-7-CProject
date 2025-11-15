@@ -82,7 +82,7 @@ struct Database* load_data(FILE *file) {
 			student_index,
 			record[student_index].id,
 			record[student_index].name,
-			record[student_index].programme,
+			record[student_index].programme,	
 			record[student_index].mark);
 		student_index++;
 	}

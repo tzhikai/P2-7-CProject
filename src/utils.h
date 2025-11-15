@@ -5,7 +5,7 @@
 
 // function prototypes
 void clean_input(char command[]);
-void tempclean(char command[]);
+void CleanUpper(char command[]);
 int countid(int command);
 
 

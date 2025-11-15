@@ -81,7 +81,7 @@ struct Database* delete_fn(char* context) {
 		printf("\nID to Delete: ");
 
 		fgets(idbuffer, sizeof(idbuffer), stdin);
-		tempclean(idbuffer); //Accept id as string for cleanup
+		CleanUpper(idbuffer); //Accept id as string for cleanup
 		//printf("\nidbuffer: %s", idbuffer);
 		int iddelete = atoi(idbuffer); //Convert string to int, if string is not integer, atoi returns 0
 		//printf("\niddelete: %d", iddelete);
@@ -123,7 +123,7 @@ struct Database* delete_fn(char* context) {
 		while (cnfmdeleting == 1) {
 			printf("\nAre you sure you want to delete record with ID=%d? Type \"Y\" to Confirm or type \"N\" to Cancel: ", iddelete);
 			fgets(cnfm, sizeof(cnfm), stdin);
-			tempclean(cnfm);
+			CleanUpper(cnfm);
 
 			//printf("\nSize of Original Database: %d", StudentDB->size);
 			//printf("\nSize of New Database: %d", NEWdb->size);
@@ -145,7 +145,7 @@ struct Database* delete_fn(char* context) {
 					printf("NEWrecord Memory allocation for StudentRecord failed.\n");
 					break;
 				}
-
+				/*
 				for (int i = 0; i < StudentDB->size; i++) {
 					printf("\nChecking Index %d\n", i);
 					if (i == indexdelete) {
@@ -161,6 +161,7 @@ struct Database* delete_fn(char* context) {
 						NEWrecord[i].programme,
 						NEWrecord[i].mark);
 				}
+				*/
 				set_database(NEWdb);
 				free(record);
 				free(StudentDB);
@@ -192,8 +193,7 @@ bool sort_fn(char* context) {
 	while (sorting == 1) {
 		printf("Sort:\nBy ID\nBy Mark\nP2_7: ");
 		fgets(sortchoice, sizeof(sortchoice), stdin);
-		printf("\n");
-		tempclean(sortchoice);
+		CleanUpper(sortchoice);
 
 		// Checks if they didn't input id or mark
 		if (strcmp(sortchoice, "ID") != 0 && strcmp(sortchoice, "MARK") != 0) {
@@ -201,9 +201,9 @@ bool sort_fn(char* context) {
 			continue;
 		}
 
-		printf("Ascending or Descending?\nP2_7: ");
+		printf("\nAscending or Descending?\nP2_7: ");
 		fgets(sortupdown, sizeof(sortupdown), stdin);
-		tempclean(sortupdown);
+		CleanUpper(sortupdown);
 
 		if (strcmp(sortupdown, "ASCENDING") != 0 && strcmp(sortupdown, "DESCENDING") != 0) {
 			printf("Invalid Input, please enter 'ASCENDING' or 'DESCENDING'");
@@ -242,7 +242,7 @@ bool sort_fn(char* context) {
 		}
 		sorting = 0;
 	}
-	printf("StudentRecord is sorted");
+	printf("\nSorting Successful.\n");
 	return true;
 }
 
