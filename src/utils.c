@@ -32,28 +32,26 @@ void clean_input(char command[]) {
 	return;
 }
 
-// Temporary CleanUP for sort_fn: check if it's english word, remove null terminator and Uppercase
-void CleanUpper(char command[]) {
-	//printf("\nIssued Command: %s", command);
+// removes spaces and _s within (& in front of & back of) a string (to join words tgt for comparing similar words)
+void join_words(char input[]) {
 
-	// Remove newline character
-	command[strcspn(command, "\n")] = '\0';
+	char* read_ptr = input;
+	char* write_ptr = input;
 
-	// Remove all spaces from the string
-	char* read_ptr = command;
-	char* write_ptr = command;
+	// read_ptr pointer goes thru input's memory addr
+	while (*read_ptr != '\0') {
 
-	while (*read_ptr) {
-		if (!isspace((unsigned char)*read_ptr)) {
-			*write_ptr = toupper((unsigned char)*read_ptr);
-			write_ptr++;
+		// this rewrites write_ptr's value with read_ptr's value, but only when not _ or space
+		if ((*read_ptr != '_') && (*read_ptr != ' ')) {
+			*write_ptr++ = *read_ptr;
 		}
+
+		//write_ptr++;
 		read_ptr++;
 	}
+	// if a char was overwritten, the string needs to end early
 	*write_ptr = '\0';
 
-	//printf("\nCleaned Command: %s", command);
-	return;
 }
 
 // Counts digits of positive or negative integer by division of 10, returns 1 if 0

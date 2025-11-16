@@ -19,10 +19,6 @@ bool sort_fn(char* context);
 bool run_command(char command[]);
 
 
-// external references
-extern struct operation operations[];
-
-
 #endif // !COMMANDS_H
 
 

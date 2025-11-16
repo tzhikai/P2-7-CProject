@@ -10,48 +10,77 @@
 #include "sort.h"
 #include "utils.h"
 
-// example open function
 bool open_fn(char* context) {
 	//char cwd[1024];
 	//_getcwd(cwd, sizeof(cwd));
 	//printf("Current working directory: %s\n", cwd);
+
+	struct Database* oldDB = get_database();
+	if (oldDB != NULL) {	// means open was run twice, need to free old stuff so can overwrite smoothly
+		free_database(oldDB);
+		set_database(NULL);
+	}
 
 	if (context[0] == '\0' || context == NULL) {
 		printf("No file name detected, please try again.\n");
 		return false;
 	}
 
-	char *filename = strtok_s(NULL, " ", &context);
-	char filepath[250] = "src\\";
+	// char *filename = strtok_s(NULL, " ", &context);
+	char filepath[250] = "src\\data\\";
 
-	strcat_s(filepath, sizeof(filepath), filename);
+	//printf("ZK: test context %s\n", context);
+
+	strcat_s(filepath, sizeof(filepath), context);	// concat context gives remaining string (allows filenames w spaces)
 	printf("filepath: %s\n", filepath);
 
 	FILE* file_ptr;
 	fopen_s(&file_ptr, filepath, "r");
 	///*FILE* file_ptr = fopen("C:\\Users\\tzhik\\OneDrive\\Documents\\SIT\\Y1T1\\INF1002 Programming Fundamentals\\C_Half\\P2_7_C_Project\\src\\CMS.txt", "r");*/
+
+	// handle possibility that file not found cuz no extension given
+	if (file_ptr == NULL && strchr(context, '.') == NULL) {
+
+		const char* extensions[] = { ".txt" };	// might add .csv, but too much work, too much difference
+		int loop_amt = sizeof(extensions) / sizeof(extensions[0]);
+
+		for (int i = 0; i < loop_amt; i++) {
+			char filepath_ext[250];	//zktodo: use snprintf?
+			strcpy_s(filepath_ext, sizeof(filepath_ext), filepath);
+			strcat_s(filepath_ext, sizeof(filepath_ext), extensions[i]);
+			fopen_s(&file_ptr, filepath_ext, "r");
+
+			if (file_ptr != NULL) {
+				printf("Missing extension, found %s instead\n", filepath_ext);
+				strcpy_s(filepath, sizeof(filepath), filepath_ext);	// update filepath for the printf
+				break;
+			}
+		}
+
+	}
+	// if it still fails, lost cause
 	if (file_ptr == NULL) {
 		printf("File %s not found.\n", filepath);
 		return false;
 	}
 
-	printf("The database file \"%s\" is successfully opened.\n", filename);
-	/*struct Student* StudentRecord = load_data(file_ptr);*/
+	printf("The database file \"%s\" is successfully opened.\n", filepath);
 	struct Database* StudentDB = load_data(file_ptr);
 	fclose(file_ptr);
-	
-	if (StudentDB->StudentRecord == NULL) {
+
+	if (StudentDB == NULL || StudentDB->StudentRecord == NULL) {
 		return false;
 	}
 
-	set_database(StudentDB);
+	strcpy_s(StudentDB->filepath, sizeof(StudentDB->filepath), filepath);	// store filepath for save fn
+
+	set_database(StudentDB);	// store in static var for access from other functions
 	return true;
 	
 }
-// example show all function
-bool showall_fn(char* context) {
-	//printf("\nPretend im listing stuff!!!%s\n\n", context);
 
+bool showall_fn(char* context) {
+	
 	struct Database* StudentDB = get_database();
 
 	if (StudentDB == NULL) {
@@ -60,20 +89,84 @@ bool showall_fn(char* context) {
 	}
 
 	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
+	
+	//printf("%s and %s\n", StudentDB->databaseName, StudentDB->authors);
+	printf("Here are all the records found in the table \"%s\".\n", StudentDB->tableName);
 
-	printf("StudentDB->size: %d\n", StudentDB->size);
+	// print out header row, same as input file
+	for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
+		printf("%s", StudentDB->columns[column_index].header_name);
+		//switch (StudentDB->columns[column_index].column_id) {
+		//	case COL_ID:
+		//		filler_width = 5;	// length of 7 digit id minus length of "ID"
+		//		break;
+		//	case COL_NAME:
+		//		filler_width = StudentDB->columns[column_index].max_width - strlen(StudentDB->columns[column_index].header_name);
+		//		break;
+		//	case COL_PROGRAMME:
+		//		filler_width = StudentDB->columns[column_index].max_width - strlen(StudentDB->columns[column_index].header_name);
+		//		break;
+		//	case COL_MARK:
+		//		filler_width = 1;	// length of "100.0" minus length of "MARK"
+		//		break;
+		//	case COL_OTHER:
+		//		break;
+		//}
+		int filler_width = StudentDB->columns[column_index].max_width - strlen(StudentDB->columns[column_index].header_name);
+		printf("%*s\t", filler_width, "");
+	}
+	printf("\n");
+	
+	// print out the data rows, following header order
+	for (int student_index = 0; student_index < StudentDB->size; student_index++) {
+		// for each column in the row
+		for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
+			int datapoint_width = 0;
+			char mark_str[10];
 
-	printf("Here are all the records found in the table \"<insert table name>\".\n");
+			switch (StudentDB->columns[column_index].column_id) {
+				case COL_ID:
+					printf("%d", record[student_index].id);
+					// ID are fixed to 7 digits, so no extra spaces here
+					//printf("%*s", StudentDB->columns[column_index].max_width - strlen(record[student_index].id), "");
+					datapoint_width = 7;	// 7 digit id
+					break;
+				case COL_NAME:
+					printf("%s", record[student_index].name);
+					//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].name)), "");
+					datapoint_width = strlen(record[student_index].name);
+					break;
+				case COL_PROGRAMME:
+					printf("%s", record[student_index].programme);
+					//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].programme)), "");
+					datapoint_width = strlen(record[student_index].programme);
+					break;
+				case COL_MARK:
+					printf("%.1f", record[student_index].mark);	// %.1f below cuz %f gives smth like 0.000000 (width becomes too high)
+					sprintf_s(mark_str, sizeof(mark_str), "%.1f", record[student_index].mark);
+					datapoint_width = strlen(mark_str);
 
-	printf("ID\tName\tProgramme\tMark\n");
-	for (int i = 0; i < StudentDB->size; i++) {
-		printf("%d\t%s\t%s\t%f\n", record[i].id, record[i].name, record[i].programme, record[i].mark);
+					// Mark has a max possible length of 5 (100.0)
+					break;
+				case COL_OTHER:	// safety net	(not printing the value cuz im currently not storing those vals)
+					printf("N/A");
+					datapoint_width = 3;
+					break;
+			}
+
+			printf("%*s", (StudentDB->columns[column_index].max_width - datapoint_width), "");	// add spaces to align columns in print
+
+			if (column_index != StudentDB->column_count - 1) {//-1 because column_index starts from 0
+				printf("\t");	// \t unless end of line, though doesnt rly matter (inputs are stripped anyway)
+			}
+		}
+		printf("\n");
 	}
 
 	return true;
 };
 
-// jaison deletee function 2501161[7] + 3 = 10
+// jaison delete function
 struct Database* delete_fn(char* context) {
 	char cnfm[6], idbuffer[10];
 	int deleting = 1;
@@ -81,10 +174,12 @@ struct Database* delete_fn(char* context) {
 		printf("\nID to Delete: ");
 
 		fgets(idbuffer, sizeof(idbuffer), stdin);
-		CleanUpper(idbuffer); //Accept id as string for cleanup
+		clean_input(idbuffer); //Accept id as string for cleanup
 		//printf("\nidbuffer: %s", idbuffer);
 		int iddelete = atoi(idbuffer); //Convert string to int, if string is not integer, atoi returns 0
 		//printf("\niddelete: %d", iddelete);
+
+		/*
 		int count = countid(iddelete); //Counts digits in userinput, if input is 0 (or atoi returns 0)
 		//printf("\ncount: %d", count);
 
@@ -93,67 +188,85 @@ struct Database* delete_fn(char* context) {
 			printf("\nPlease enter a valid ID");
 			continue;
 		}
+		*/
 
-		struct Database* StudentDB = get_database();
-		int cnfmdeleting = 0;
+		struct Database* StudentDB = get_database(); // Initialize existing struct Student Database
 
 		if (StudentDB == NULL) {
 			printf("\nNo records in database.");
 			break;
 		}
 
-		struct Student* record = StudentDB->StudentRecord;
-		int indexdelete = -1;
+		struct Student* record = StudentDB->StudentRecord; // Initialize record pointer for easier writing
+		int indexdelete = -1;  // Initialize indexdelete to -1 to check if ID to delete exists
+		int cnfmdeleting = 0; // Initialize cnfmdeleting to enter confirmation loop if ID to delete exists
 
+			
+		// Checks record.id if it matches userinput iddelete OLD CODE
 		for (int i = 0; i < StudentDB->size; i++) {
 			if (record[i].id == iddelete) {
 				printf("\nFound record ID=%d at Index=%d", iddelete, i);
 				indexdelete = i;
-				cnfmdeleting = 1;
+				cnfmdeleting = 1; //Starts confirmation loop
 				break;
 			}
 		}
-
+		
+		// ID to delete does not exist
 		if (indexdelete == -1) {
 			printf("\nThe record with ID=%d does not exist", iddelete);
 			deleting = 0;
 			break;
 		}
 
+		// Confirmation loop
 		while (cnfmdeleting == 1) {
 			printf("\nAre you sure you want to delete record with ID=%d? Type \"Y\" to Confirm or type \"N\" to Cancel: ", iddelete);
 			fgets(cnfm, sizeof(cnfm), stdin);
-			CleanUpper(cnfm);
+			clean_input(cnfm);
 
 			//printf("\nSize of Original Database: %d", StudentDB->size);
 			//printf("\nSize of New Database: %d", NEWdb->size);
 
-			if (strcmp(cnfm, "Y") == 0) {
-				struct Database* NEWdb = malloc(sizeof(struct Database));
+			// Yes confirmation
+			if (_stricmp(cnfm, "y") == 0) {
+
+				/*
+				for (int i = indexdelete; i < StudentDB->size; i++) {
+					StudentDB->StudentRecord[i] = StudentDB->StudentRecord[i + 1];
+				}
+				*/
+
+				struct Database* NEWdb = malloc(sizeof(struct Database)); //Initialize NEWdb to copy old database excluding deleted record
+				NEWdb = cpyDatabaseDetails(StudentDB, NEWdb); // Refer to 'jaison addition' in data.c & data.h
+				
 				NEWdb->StudentRecord = malloc(sizeof(struct Student) * (StudentDB->size - 1));
-				NEWdb->memory = sizeof(struct Database);
 				NEWdb->size = StudentDB->size - 1;
 				int newindex = 0;
-				struct Student* NEWrecord = NEWdb->StudentRecord;
-
+				
 				if (NEWdb == NULL) {
-					printf("\nNEWrecord Memory Allocation Failed.");
+					printf("\nNEW Database Creation Failed.");
 					break;
 				}
+
+				struct Student* NEWrecord = NEWdb->StudentRecord;
 
 				if (NEWrecord == NULL) {
 					printf("NEWrecord Memory allocation for StudentRecord failed.\n");
 					break;
 				}
-				/*
+				
 				for (int i = 0; i < StudentDB->size; i++) {
 					printf("\nChecking Index %d\n", i);
 					if (i == indexdelete) {
+						printf("\nSkipping Index %d\n", i);
 						continue;
 					}
 					NEWrecord[newindex] = record[i];
 					newindex++;
 				}
+
+				printf("\nNew StudentRecord\n");
 				for (int i = 0; i < NEWdb->size; i++) {
 					printf("%d\t%s\t%s\t%f\n",
 						NEWrecord[i].id,
@@ -161,9 +274,11 @@ struct Database* delete_fn(char* context) {
 						NEWrecord[i].programme,
 						NEWrecord[i].mark);
 				}
-				*/
+
 				set_database(NEWdb);
+				
 				free(record);
+				free(StudentDB->columns);
 				free(StudentDB);
 
 				printf("\nThe record with ID=%d is successfully deleted\n", iddelete);
@@ -171,7 +286,7 @@ struct Database* delete_fn(char* context) {
 				deleting = 0;
 				return NEWdb;
 			}
-			else if (strcmp(cnfm, "N") == 0) {
+			else if (_stricmp(cnfm, "n") == 0) {
 					printf("\nThe deletion is cancelled.");
 					cnfmdeleting = 0;
 					return StudentDB;
@@ -193,19 +308,19 @@ bool sort_fn(char* context) {
 	while (sorting == 1) {
 		printf("Sort:\nBy ID\nBy Mark\nP2_7: ");
 		fgets(sortchoice, sizeof(sortchoice), stdin);
-		CleanUpper(sortchoice);
+		clean_input(sortchoice);
 
 		// Checks if they didn't input id or mark
-		if (strcmp(sortchoice, "ID") != 0 && strcmp(sortchoice, "MARK") != 0) {
+		if (_stricmp(sortchoice, "id") != 0 && _stricmp(sortchoice, "mark") != 0) {
 			printf("\nInvalid Input, please enter 'ID' or 'MARK'\n");
 			continue;
 		}
 
 		printf("\nAscending or Descending?\nP2_7: ");
 		fgets(sortupdown, sizeof(sortupdown), stdin);
-		CleanUpper(sortupdown);
+		clean_input(sortupdown);
 
-		if (strcmp(sortupdown, "ASCENDING") != 0 && strcmp(sortupdown, "DESCENDING") != 0) {
+		if (_stricmp(sortupdown, "ascending") != 0 && _stricmp(sortupdown, "descending") != 0) {
 			printf("Invalid Input, please enter 'ASCENDING' or 'DESCENDING'");
 			continue;
 		}
@@ -218,24 +333,24 @@ bool sort_fn(char* context) {
 			return false;
 		}
 
-		if (strcmp(sortchoice, "ID") == 0) {
+		if (_stricmp(sortchoice, "id") == 0) {
 			printf("\nSorting by ID...");
-			if (strcmp(sortupdown, "ASCENDING") == 0) {
+			if (_stricmp(sortupdown, "ascending") == 0) {
 				printf("\nSorting ID in Ascending Order...");
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compidup);
 			}
-			else if (strcmp(sortupdown, "DESCENDING") == 0) {
+			else if (_stricmp(sortupdown, "descending") == 0) {
 				printf("\nSorting ID in Descending Order...");
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compiddown);
 			}
 		}
-		else if (strcmp(sortchoice, "MARK") == 0) {
+		else if (_stricmp(sortchoice, "mark") == 0) {
 			printf("\nSorting by MARK...");
-			if (strcmp(sortupdown, "ASCENDING") == 0) {
+			if (_stricmp(sortupdown, "ascending") == 0) {
 				printf("\nSorting MARK in Ascending Order...");
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compmarkup);
 			}
-			else if (strcmp(sortupdown, "DESCENDING") == 0) {
+			else if (_stricmp(sortupdown, "descending") == 0) {
 				printf("\nSorting MARK in Descending Order...");
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compmarkdown);
 			}

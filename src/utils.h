@@ -5,8 +5,8 @@
 
 // function prototypes
 void clean_input(char command[]);
-void CleanUpper(char command[]);
-int countid(int command);
+
+void join_words(char input[]);
 
 
 #endif // !INPUT_H
