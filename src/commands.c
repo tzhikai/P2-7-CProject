@@ -171,13 +171,26 @@ struct Database* delete_fn(char* context) {
 	char cnfm[6], idbuffer[10];
 	int deleting = 1;
 	while (deleting == 1) {
+		struct Database* StudentDB = get_database(); // Initialize existing struct Student Database
+
+		if (StudentDB == NULL) {
+			printf("\nNo records in database.");
+			break;
+		}
+		
 		printf("\nID to Delete: ");
 
 		fgets(idbuffer, sizeof(idbuffer), stdin);
 		clean_input(idbuffer); //Accept id as string for cleanup
-		//printf("\nidbuffer: %s", idbuffer);
+
+		for (int i = 0; i < sizeof(StudentDB->size); i++) {
+			if (validate_id(idbuffer, i, StudentDB) == 1) {
+				printf("\nPlease enter a valid ID");
+				continue;
+			}
+		}
+
 		int iddelete = atoi(idbuffer); //Convert string to int, if string is not integer, atoi returns 0
-		//printf("\niddelete: %d", iddelete);
 
 		/*
 		int count = countid(iddelete); //Counts digits in userinput, if input is 0 (or atoi returns 0)
@@ -190,22 +203,15 @@ struct Database* delete_fn(char* context) {
 		}
 		*/
 
-		struct Database* StudentDB = get_database(); // Initialize existing struct Student Database
-
-		if (StudentDB == NULL) {
-			printf("\nNo records in database.");
-			break;
-		}
-
 		struct Student* record = StudentDB->StudentRecord; // Initialize record pointer for easier writing
 		int indexdelete = -1;  // Initialize indexdelete to -1 to check if ID to delete exists
 		int cnfmdeleting = 0; // Initialize cnfmdeleting to enter confirmation loop if ID to delete exists
 
 			
-		// Checks record.id if it matches userinput iddelete OLD CODE
+		// Checks record.id if it matches userinput iddelete
 		for (int i = 0; i < StudentDB->size; i++) {
 			if (record[i].id == iddelete) {
-				printf("\nFound record ID=%d at Index=%d", iddelete, i);
+				printf("\nFound record ID=%d at Index=%d", iddelete, i); //Debug
 				indexdelete = i;
 				cnfmdeleting = 1; //Starts confirmation loop
 				break;
@@ -214,14 +220,14 @@ struct Database* delete_fn(char* context) {
 		
 		// ID to delete does not exist
 		if (indexdelete == -1) {
-			printf("\nThe record with ID=%d does not exist", iddelete);
+			printf("\nThe record with ID=%d does not exist\n", iddelete); //Debug
 			deleting = 0;
 			break;
 		}
 
 		// Confirmation loop
 		while (cnfmdeleting == 1) {
-			printf("\nAre you sure you want to delete record with ID=%d? Type \"Y\" to Confirm or type \"N\" to Cancel: ", iddelete);
+			printf("\nAre you sure you want to delete record with ID=%d?\nType \"Y\" to Confirm or type \"N\" to Cancel: ", iddelete);
 			fgets(cnfm, sizeof(cnfm), stdin);
 			clean_input(cnfm);
 
@@ -257,15 +263,16 @@ struct Database* delete_fn(char* context) {
 				}
 				
 				for (int i = 0; i < StudentDB->size; i++) {
-					printf("\nChecking Index %d\n", i);
+					printf("\nChecking Index %d\n", i); //Debug
 					if (i == indexdelete) {
-						printf("\nSkipping Index %d\n", i);
+						printf("\nSkipping Index %d\n", i); //Debug
 						continue;
 					}
 					NEWrecord[newindex] = record[i];
 					newindex++;
 				}
 
+				/* Debug NEWrecord
 				printf("\nNew StudentRecord\n");
 				for (int i = 0; i < NEWdb->size; i++) {
 					printf("%d\t%s\t%s\t%f\n",
@@ -274,6 +281,7 @@ struct Database* delete_fn(char* context) {
 						NEWrecord[i].programme,
 						NEWrecord[i].mark);
 				}
+				*/
 
 				set_database(NEWdb);
 				
@@ -287,12 +295,12 @@ struct Database* delete_fn(char* context) {
 				return NEWdb;
 			}
 			else if (_stricmp(cnfm, "n") == 0) {
-					printf("\nThe deletion is cancelled.");
+					printf("\nThe deletion is cancelled.\n");
 					cnfmdeleting = 0;
 					return StudentDB;
 			}
 			else {
-					printf("\nPlease enter either 'Y' or 'N'");
+					printf("\nPlease enter either 'Y' or 'N'\n");
 			}
 		}
 	}
@@ -306,9 +314,15 @@ bool sort_fn(char* context) {
 
 	// sortchoice is user input for Sorting by ID or Mark; sortupdown is user input for Sorting Ascending or Descending
 	while (sorting == 1) {
-		printf("Sort:\nBy ID\nBy Mark\nP2_7: ");
+		printf("\nSort:\nBy ID\nBy Mark\nP2_7: ");
 		fgets(sortchoice, sizeof(sortchoice), stdin);
 		clean_input(sortchoice);
+
+		// If they don't want to sort anymore
+		if (_stricmp(sortchoice, "exit") == 0) {
+			sorting = 0;
+			break;
+		}
 
 		// Checks if they didn't input id or mark
 		if (_stricmp(sortchoice, "id") != 0 && _stricmp(sortchoice, "mark") != 0) {
@@ -321,7 +335,7 @@ bool sort_fn(char* context) {
 		clean_input(sortupdown);
 
 		if (_stricmp(sortupdown, "ascending") != 0 && _stricmp(sortupdown, "descending") != 0) {
-			printf("Invalid Input, please enter 'ASCENDING' or 'DESCENDING'");
+			printf("\nInvalid Input, please enter 'ASCENDING' or 'DESCENDING'\n");
 			continue;
 		}
 
