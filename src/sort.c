@@ -16,6 +16,20 @@ int compiddown(const void* a, const void* b) {
 	return StudentB->id - StudentA->id;
 }
 
+// Ascending Name Sort
+int compnameup(const void* a, const void* b) {
+	const struct Student* StudentA = (const struct Student*)a;
+	const struct Student* StudentB = (const struct Student*)b;
+	return StudentA->name[0] - StudentB->name[0];
+}
+
+// Descending Name Sort
+int compnamedown(const void* a, const void* b) {
+	const struct Student* StudentA = (const struct Student*)a;
+	const struct Student* StudentB = (const struct Student*)b;
+	return StudentB->name[0] - StudentA->name[0];
+}
+
 // Ascending Mark Sort
 int compmarkup(const void* a, const void* b) {
 	const struct Student* StudentA = (const struct Student*)a;

@@ -314,7 +314,7 @@ bool sort_fn(char* context) {
 
 	// sortchoice is user input for Sorting by ID or Mark; sortupdown is user input for Sorting Ascending or Descending
 	while (sorting == 1) {
-		printf("\nSort:\nBy ID\nBy Mark\nP2_7: ");
+		printf("\nSort:\nBy ID\nBy Mark\nBy Name\nP2_7: ");
 		fgets(sortchoice, sizeof(sortchoice), stdin);
 		clean_input(sortchoice);
 
@@ -325,7 +325,7 @@ bool sort_fn(char* context) {
 		}
 
 		// Checks if they didn't input id or mark
-		if (_stricmp(sortchoice, "id") != 0 && _stricmp(sortchoice, "mark") != 0) {
+		if (_stricmp(sortchoice, "id") != 0 && _stricmp(sortchoice, "mark") != 0 && _stricmp(sortchoice, "name") != 0) {
 			printf("\nInvalid Input, please enter 'ID' or 'MARK'\n");
 			continue;
 		}
@@ -369,6 +369,17 @@ bool sort_fn(char* context) {
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compmarkdown);
 			}
 		}
+		else if (_stricmp(sortchoice, "name") == 0) {
+			printf("\nSorting by NAME...");
+			if (_stricmp(sortupdown, "ascending") == 0) {
+				printf("\nSorting NAME in Ascending Order...");
+				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compnameup);
+			}
+			else if (_stricmp(sortupdown, "descending") == 0) {
+				printf("\nSorting NAME in Descending Order...");
+				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compnamedown);
+			}
+		}	
 		sorting = 0;
 	}
 	printf("\nSorting Successful.\n");
