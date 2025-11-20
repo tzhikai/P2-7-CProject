@@ -170,7 +170,16 @@ bool showall_fn(char* context) {
 // jaison delete function
 // zkchange: should be bool since thats what run_command expects, and theres no need to return the newDB when we use set_database
 bool delete_fn(char* context) {
-	char cnfm[6], idbuffer[10];
+	char cnfm[6];
+	char idbuffer[10] = "";
+
+	// means user typed something after delete command
+	if (context != NULL && context[0] != '\0') {
+		clean_input(context);
+		strncpy_s(idbuffer, sizeof(idbuffer), context, _TRUNCATE);
+		printf("User gave ID to delete: %s\n", idbuffer);
+	}
+
 	int deleting = 1;
 	while (deleting == 1) {
 		struct Database* StudentDB = get_database(); // Initialize existing struct Student Database
@@ -180,10 +189,11 @@ bool delete_fn(char* context) {
 			break;
 		}
 		
-		printf("\nID to Delete: ");
-
-		fgets(idbuffer, sizeof(idbuffer), stdin);
-		clean_input(idbuffer); //Accept id as string for cleanup
+		if (idbuffer[0] == '\0') {	// means user just typed DELETE, no id initially given
+			printf("\nID to Delete: ");
+			fgets(idbuffer, sizeof(idbuffer), stdin);
+			clean_input(idbuffer); //Accept id as string for cleanup
+		}
 
 		//for (int i = 0; i < StudentDB->size; i++) {	
 		//	if (validate_id(idbuffer, i, StudentDB) == 1) {
@@ -193,9 +203,23 @@ bool delete_fn(char* context) {
 		//}
 
 		//zkchange: i made this make sense (altho this 0 1 2 system is not ideal)
-		if (validate_id(idbuffer, 0, StudentDB) < 2) {	// 0 = valid, unused id; 1 = invalid id; 2 = valid, duplicate id
-			printf("\nPlease enter a valid ID");
-			continue;
+		//if (validate_id(idbuffer, 0, StudentDB) < 2) {	// 0 = valid, unused id; 1 = invalid id; 2 = valid, duplicate id
+		//	printf("\nPlease enter a valid ID");
+		//	idbuffer[0] = '\0'; // prompts fgets again to ask user for id again
+		//	continue;
+		//}
+
+		switch (validate_id(idbuffer, 0, StudentDB)) {
+			case 1:	// ID is invalid
+				printf("\nPlease enter a valid ID.");
+				idbuffer[0] = '\0'; // prompts fgets again to ask user for id again
+				continue;
+			case 0:	// ID is valid but not in use, nothing to delete
+				printf("\nID is not in use.");
+				idbuffer[0] = '\0';
+				continue;
+			case 2:	// ID is valid and in use, proceed to deleting
+				break;
 		}
 
 
