@@ -6,18 +6,6 @@
 #include "data.h"
 
 // proto hy
-void clean_input(char command[]) {
-	char* last = command + strlen(command) - 1;
-	while (last >= command && isspace(*last)) last--;
-	*(last + 1) = '\0';
-
-	char* first = command;
-	while (isspace(*first)) first++;
-
-	if (first != command)
-		memmove(command, first, strlen(first) + 1);
-}
-
 bool is_valid_name(const char* s) {
 	for (int i = 0; s[i]; i++) {
 		if (!isalpha(s[i]) && s[i] != ' ')
@@ -30,6 +18,61 @@ bool read_line(char* buffer, int size) {
 	if (fgets(buffer, size, stdin) == NULL)
 		return false;
 	clean_input(buffer);
+	return true;
+}
+
+bool read_optional_string(char* buffer, int size, const char* prompt) {
+	char temp[200];
+
+	printf("%s", prompt);
+	if (!fgets(temp, sizeof(temp), stdin))
+		return false;
+
+	clean_input(temp);
+
+	// ENTER means skip
+	if (temp[0] == '\0')
+		return false;
+
+	// validation: only letters + spaces
+	for (int i = 0; temp[i]; i++) {
+		if (!isalpha(temp[i]) && temp[i] != ' ') {
+			printf("Invalid input. Only letters and spaces allowed. Change skipped.\n");
+			return false;
+		}
+	}
+
+	strncpy_s(buffer, size, temp, _TRUNCATE);
+	return true;
+}
+
+bool read_optional_mark(float* result, const char* prompt) {
+	char temp[50];
+
+	printf("%s", prompt);
+	if (!fgets(temp, sizeof(temp), stdin))
+		return false;
+
+	clean_input(temp);
+
+	if (temp[0] == '\0')
+		return false;   // skip
+
+	// validate numeric
+	char* end;
+	float value = strtof(temp, &end);
+
+	if (*end != '\0') {
+		printf("Invalid mark. Change skipped.\n");
+		return false;
+	}
+
+	if (value < 0 || value > 100) {
+		printf("Mark must be between 0 and 100. Change skipped.\n");
+		return false;
+	}
+
+	*result = value;
 	return true;
 }
 
