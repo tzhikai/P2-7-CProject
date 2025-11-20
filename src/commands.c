@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <direct.h>	// for checking current working directory to see what the relative path is
 #include <ctype.h>
+#include <float.h>
 
 #include "commands.h"
 #include "data.h"
@@ -485,13 +486,161 @@ bool undo_fn(char* context){
 	return true;
 }
 
+// HY //
+//hy show summary
+void showSummary() {
+	struct Database* StudentDB = get_database();
+	if (StudentDB == NULL || StudentDB->size == 0) {
+		printf("CMS: No records found.\n");
+		return;
+	}
+
+	float total = 0;
+	float highest = -FLT_MAX;
+	float lowest = FLT_MAX;
+	int hiIndex = 0, loIndex = 0;
+
+	for (int i = 0; i < StudentDB->size; i++) {
+		float m = StudentDB->StudentRecord[i].mark;
+		total += m;
+		if (m > highest) { highest = m; hiIndex = i; }
+		if (m < lowest) { lowest = m; loIndex = i; }
+	}
+
+	printf("CMS: Summary Statistics\n");
+	printf("Total number of students: %d\n", StudentDB->size);
+	printf("Average mark: %.2f\n", total / StudentDB->size);
+	printf("Highest mark: %.1f (%s)\n", highest, StudentDB->StudentRecord[hiIndex].name);
+	printf("Lowest mark: %.1f (%s)\n", lowest, StudentDB->StudentRecord[loIndex].name);
+}
+// hy summary function
+bool summary_fn(char* context) {
+	struct Database* StudentDB = get_database();
+	if (StudentDB == NULL) {
+		printf("CMS: No database loaded. Please OPEN one first.\n");
+		return false;
+	}
+
+	showSummary();
+	return true;
+}
+
+//hy update
+bool update_fn(char* context) {
+	struct Database* StudentDB = get_database();
+	if (StudentDB == NULL || StudentDB->StudentRecord == NULL) {
+		printf("CMS: No database loaded. Please OPEN one first.\n");
+		return false;
+	}
+
+	int targetID;
+	printf("CMS: Enter the student ID to update: ");
+
+	// Validate ID input
+	while (scanf_s("%d", &targetID) != 1) {
+		printf("CMS: Invalid ID. Please enter a numeric student ID: ");
+		while (getchar() != '\n');
+	}
+	while (getchar() != '\n');
+
+	// ======== FIND THE RECORD ========
+	int i, foundIndex = -1;
+	for (i = 0; i < StudentDB->size; i++) {
+		if (StudentDB->StudentRecord[i].id == targetID) {
+			foundIndex = i;
+			break;
+		}
+	}
+
+	if (foundIndex == -1) {
+		printf("CMS: The record with ID=%d does not exist.\n", targetID);
+		return false;
+	}
+
+	struct Student* s = &StudentDB->StudentRecord[foundIndex];
+
+	printf("\nCMS: Record found.\n");
+	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
+		s->id, s->name, s->programme, s->mark);
+
+	printf("\n=== Enter New Data (Press Enter to skip a field) ===\n");
+
+	// ======== NAME (skip allowed) ========
+	char buffer[100];
+	printf("Enter new name (letters & spaces only, Enter = skip): ");
+
+	fgets(buffer, sizeof(buffer), stdin);
+
+	if (buffer[0] != '\n') { // user typed something
+		buffer[strcspn(buffer, "\n")] = 0; // remove newline
+
+		bool valid = true;
+		for (int j = 0; buffer[j] != '\0'; j++) {
+			if (!isalpha(buffer[j]) && buffer[j] != ' ') {
+				valid = false;
+				break;
+			}
+		}
+
+		if (!valid) {
+			printf("CMS: Invalid name. Update skipped for this field.\n");
+		}
+		else {
+			strcpy_s(s->name, sizeof(s->name), buffer);
+		}
+	}
+
+	// ======== PROGRAMME (skip allowed) ========
+	printf("Enter new programme (letters & spaces only, Enter = skip): ");
+	fgets(buffer, sizeof(buffer), stdin);
+
+	if (buffer[0] != '\n') {
+		buffer[strcspn(buffer, "\n")] = 0;
+
+		bool valid = true;
+		for (int j = 0; buffer[j] != '\0'; j++) {
+			if (!isalpha(buffer[j]) && buffer[j] != ' ') {
+				valid = false;
+				break;
+			}
+		}
+
+		if (!valid) {
+			printf("CMS: Invalid programme. Update skipped for this field.\n");
+		}
+		else {
+			strcpy_s(s->programme, sizeof(s->programme), buffer);
+		}
+	}
+
+	// ======== MARK (skip allowed) ========
+	printf("Enter new mark (0-100, Enter = skip): ");
+	fgets(buffer, sizeof(buffer), stdin);
+
+	if (buffer[0] != '\n') {
+		float newMark;
+
+		if (sscanf_s(buffer, "%f", &newMark) == 1 && newMark >= 0 && newMark <= 100) {
+			s->mark = newMark;
+		}
+		else {
+			printf("CMS: Invalid mark. Update skipped for this field.\n");
+		}
+	}
+
+	printf("CMS: The record with ID=%d is successfully updated.\n", targetID);
+	return true;
+}
+
 // array of available commands (all new ones go in here)
 struct operation operations[] = {
 	{"OPEN", 1, open_fn},
 	{"SHOW ALL", 2, showall_fn},
 	{"SORT", 1, sort_fn},
 	{"DELETE", 1, delete_fn},
-	{"UNDO", 1, undo_fn}
+	{"UNDO", 1, undo_fn},
+	{ "SHOW SUMMARY", 2, summary_fn },
+	{ "UPDATE", 1, update_fn }
 };
 
 // handles the execution of operation based on user input command

@@ -10,6 +10,10 @@ struct operation {
 	bool (*function)(char* context);
 };
 
+// hy test functions
+bool summary_fn(char* context);
+void showSummary();
+
 // function prototypes
 bool open_fn(char* filename);	// context in this means filename 
 bool showall_fn(char* context);
