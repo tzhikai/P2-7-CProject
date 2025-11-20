@@ -1,4 +1,4 @@
-#ifndef INPUT_H		// checks if INPUT_H has been defined before, and skips it if it has
+#ifndef UTILS_H
 #define UTILS_H
 
 #include <stdbool.h>

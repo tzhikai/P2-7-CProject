@@ -510,96 +510,100 @@ bool undo_fn(char* context){
 	return true;
 }
 
-// HY //
-//hy show summary
-void showSummary() {
-	struct Database* StudentDB = get_database();
-	if (StudentDB == NULL || StudentDB->size == 0) {
-		printf("CMS: No records found.\n");
-		return;
-	}
+// HY 
+struct Summary compute_summary(struct Database* db) {
+	struct Summary sum = { 0 };
+	sum.highest = -FLT_MAX;
+	sum.lowest = FLT_MAX;
 
 	float total = 0;
-	float highest = -FLT_MAX;
-	float lowest = FLT_MAX;
-	int hiIndex = 0, loIndex = 0;
 
-	for (int i = 0; i < StudentDB->size; i++) {
-		float m = StudentDB->StudentRecord[i].mark;
+	for (int i = 0; i < db->size; i++) {
+		float m = db->StudentRecord[i].mark;
 		total += m;
-		if (m > highest) { highest = m; hiIndex = i; }
-		if (m < lowest) { lowest = m; loIndex = i; }
+
+		if (m > sum.highest) {
+			sum.highest = m;
+			sum.highestIndex = i;
+		}
+		if (m < sum.lowest) {
+			sum.lowest = m;
+			sum.lowestIndex = i;
+		}
 	}
 
-	printf("CMS: Summary Statistics\n");
-	printf("Total number of students: %d\n", StudentDB->size);
-	printf("Average mark: %.2f\n", total / StudentDB->size);
-	printf("Highest mark: %.1f (%s)\n", highest, StudentDB->StudentRecord[hiIndex].name);
-	printf("Lowest mark: %.1f (%s)\n", lowest, StudentDB->StudentRecord[loIndex].name);
+	sum.average = total / db->size;
+	return sum;
 }
+
+// hy print functions
+void print_student(const struct Student* s) {
+	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
+		s->id, s->name, s->programme, s->mark);
+}
+
+void print_summary(const struct Summary* sum, struct Database* db) {
+	printf("CMS: Summary Statistics\n");
+	printf("Total number of students: %d\n", db->size);
+	printf("Average mark: %.2f\n", sum->average);
+	printf("Highest mark: %.1f (%s)\n",
+		sum->highest, db->StudentRecord[sum->highestIndex].name);
+	printf("Lowest mark: %.1f (%s)\n",
+		sum->lowest, db->StudentRecord[sum->lowestIndex].name);
+}
+
 // hy summary function
 bool summary_fn(char* context) {
-	struct Database* StudentDB = get_database();
-	if (StudentDB == NULL) {
-		printf("CMS: No database loaded. Please OPEN one first.\n");
+	struct Database* db = get_database();
+	if (!db || db->size == 0) {
+		printf("CMS: No records found.\n");
 		return false;
 	}
 
-	showSummary();
+	struct Summary s = compute_summary(db);
+	print_summary(&s, db);
+
 	return true;
 }
 
 //hy update
 bool update_fn(char* context) {
-	struct Database* StudentDB = get_database();
-	if (StudentDB == NULL || StudentDB->StudentRecord == NULL) {
+	struct Database* db = get_database();
+	if (!db || !db->StudentRecord) {
 		printf("CMS: No database loaded. Please OPEN one first.\n");
 		return false;
 	}
 
-	int targetID;
+	int id;
 	printf("CMS: Enter the student ID to update: ");
 
-	// Validate numeric ID
-	while (scanf_s("%d", &targetID) != 1) {
-		printf("CMS: Invalid ID. Please enter a numeric student ID: ");
+	while (scanf_s("%d", &id) != 1) {
+		printf("Invalid ID. Enter numeric only: ");
 		while (getchar() != '\n');
 	}
 	while (getchar() != '\n');
 
-	// Find record
-	int foundIndex = -1;
-	for (int i = 0; i < StudentDB->size; i++) {
-		if (StudentDB->StudentRecord[i].id == targetID) {
-			foundIndex = i;
-			break;
-		}
-	}
-
-	if (foundIndex == -1) {
-		printf("CMS: The record with ID=%d does not exist.\n", targetID);
+	int index = id_search(id);
+	if (index < 0) {
+		printf("CMS: The record with ID=%d does not exist.\n", id);
 		return false;
 	}
 
-	struct Student* s = &StudentDB->StudentRecord[foundIndex];
+	struct Student* s = &db->StudentRecord[index];
 
 	printf("\nCMS: Record found.\n");
-	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
-		s->id, s->name, s->programme, s->mark);
+	print_student(s);
 
 	printf("\n=== Enter New Data (Press Enter to skip) ===\n");
 
-	// Use helpers
 	read_optional_string(s->name, sizeof(s->name),
 		"Enter new name (letters & spaces only, Enter = skip): ");
-
 	read_optional_string(s->programme, sizeof(s->programme),
 		"Enter new programme (letters & spaces only, Enter = skip): ");
-
 	read_optional_mark(&s->mark,
-		"Enter new mark (0-100, Enter = skip): ");
+		"Enter new mark (0–100, Enter = skip): ");
 
-	printf("CMS: Record with ID=%d successfully updated.\n", targetID);
+	printf("CMS: Record with ID=%d successfully updated.\n", id);
 	return true;
 }
 

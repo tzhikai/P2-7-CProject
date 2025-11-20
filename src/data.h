@@ -60,4 +60,13 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 struct ColumnMap* cpyColumnMap(const struct ColumnMap* src, int count);
 struct Database* cpyDatabaseDetails(const struct Database* src, struct Database* dest);
 
+// hy
+struct Summary {
+	float average;
+	float highest;
+	float lowest;
+	int highestIndex;
+	int lowestIndex;
+};
+
 #endif // !DATA_H
