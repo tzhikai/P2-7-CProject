@@ -184,12 +184,19 @@ bool delete_fn(char* context) {
 		fgets(idbuffer, sizeof(idbuffer), stdin);
 		clean_input(idbuffer); //Accept id as string for cleanup
 
-		for (int i = 0; i < StudentDB->size; i++) {	//zkchange: u were looping less than sizeof(size)
-			if (validate_id(idbuffer, i, StudentDB) == 1) {
-				printf("\nPlease enter a valid ID");
-				continue;
-			}
+		//for (int i = 0; i < StudentDB->size; i++) {	
+		//	if (validate_id(idbuffer, i, StudentDB) == 1) {
+		//		printf("\nPlease enter a valid ID");
+		//		continue;
+		//	}
+		//}
+
+		//zkchange: i made this make sense (altho this 0 1 2 system is not ideal)
+		if (validate_id(idbuffer, 0, StudentDB) < 2) {	// 0 = valid, unused id; 1 = invalid id; 2 = valid, duplicate id
+			printf("\nPlease enter a valid ID");
+			continue;
 		}
+
 
 		int iddelete = atoi(idbuffer); //Convert string to int, if string is not integer, atoi returns 0
 
@@ -205,36 +212,38 @@ bool delete_fn(char* context) {
 		*/
 
 		struct Student* record = StudentDB->StudentRecord; // Initialize record pointer for easier writing
-		int indexdelete = -1;  // Initialize indexdelete to -1 to check if ID to delete exists
+
 		int cnfmdeleting = 0; // Initialize cnfmdeleting to enter confirmation loop if ID to delete exists
 
-		//struct Student* recordToDelete = id_search(iddelete);	//zkchange i made this a fn (and it returns ptr to the thign to delete instead)
+		// find index of record to delete (returns -1 if not found)
+		int indexdelete = id_search(iddelete);	//zkchange i made this a fn 
 
-		//if (recordToDelete == NULL) {
-		//	printf("\nThe record with ID=%d does not exist\n", iddelete); //Debug
-		//	deleting = 0;
-		//	return false;
-		//}
-		//else {
-		//	cnfmdeleting = 1; //Starts confirmation loop
-		//}
-			
-		// Checks record.id if it matches userinput iddelete
-		for (int i = 0; i < StudentDB->size; i++) {
-			if (record[i].id == iddelete) {
-				printf("\nFound record ID=%d at Index=%d", iddelete, i); //Debug
-				indexdelete = i;
-				cnfmdeleting = 1; //Starts confirmation loop
-				break;
-			}
-		}
-		
-		//// ID to delete does not exist
 		if (indexdelete == -1) {
 			printf("\nThe record with ID=%d does not exist\n", iddelete); //Debug
 			deleting = 0;
-			break;
+			return false;
 		}
+		else {
+			printf("\nFound record ID=%d at index %d\n", iddelete, indexdelete);
+			cnfmdeleting = 1; //Starts confirmation loop
+		}
+			
+		// Checks record.id if it matches userinput iddelete
+		//for (int i = 0; i < StudentDB->size; i++) {
+		//	if (record[i].id == iddelete) {
+		//		printf("\nFound record ID=%d at Index=%d", iddelete, i); //Debug
+		//		indexdelete = i;
+		//		cnfmdeleting = 1; //Starts confirmation loop
+		//		break;
+		//	}
+		//}
+		
+		//// ID to delete does not exist
+		//if (indexdelete == -1) {
+		//	printf("\nThe record with ID=%d does not exist\n", iddelete); //Debug
+		//	deleting = 0;
+		//	break;
+		//}
 
 		// Confirmation loop
 		while (cnfmdeleting == 1) {
@@ -323,26 +332,71 @@ bool delete_fn(char* context) {
 // jaison sort function
 
 bool sort_fn(char* context) {
+	struct Database* StudentDB = get_database(); //struct Student and function get_database() is in data.c
+	//int student_count = studentcount(); Old code 
+
+	if (StudentDB == NULL) {
+		printf("No Student Records could be found. Please try using OPEN.\n");
+		return false;
+	}
+
 	int sorting = 1;
+	// sortchoice is user input for col to sort by; sortupdown is user input for Sorting Ascending or Descending
 	char sortchoice[8], sortupdown[14];
 
-	// sortchoice is user input for Sorting by ID or Mark; sortupdown is user input for Sorting Ascending or Descending
-	while (sorting == 1) {
-		printf("\nSort:\nBy ID\nBy Mark\nBy Name\nP2_7: ");
-		fgets(sortchoice, sizeof(sortchoice), stdin);
-		clean_input(sortchoice);
+	int col_index, sortchoice_int;	// storage ints to help w finding corresponding column
+	int col_answered = 0;	//decides if user's input is valid
 
-		// If they don't want to sort anymore
-		if (_stricmp(sortchoice, "exit") == 0) {
-			sorting = 0;
-			break;
+	
+	while (sorting == 1) {
+		//printf("\nSort:\nBy ID\nBy Mark\nBy Name\nP2_7: ");
+		printf("\nWhat column would you like to sort by? Type the corresponding number or \"exit\":\n");//zkchange: this what i meant by not hardcoding col names
+		for (col_index = 0; col_index < StudentDB->column_count; col_index++) {
+			if (StudentDB->columns[col_index].column_id != COL_OTHER) {	// we dont have handling for unexpected cols zktodo: fix?
+				printf("%d) %s\n", col_index + 1, StudentDB->columns[col_index].header_name);
+			}
 		}
+		if (col_index == 0) {
+			printf("No columns found to sort using.\n");
+			return false;
+		}
+		printf("P2_7: ");
+
+		do {	//zkchange: like this one mistake wont kick user out of sort
+			fgets(sortchoice, sizeof(sortchoice), stdin);
+			clean_input(sortchoice);
+
+			if (_stricmp(sortchoice, "exit") == 0) {
+				sorting = 0;
+				return false;
+			}
+
+			for (int i = 0; sortchoice[i] != '\0'; i++) {
+				if (!isdigit(sortchoice[i])) { // if any char is not a digit, invalid input
+					printf("Invalid input, please try again or type \"exit\".\n");
+					break;	//continue looping
+				}
+			}
+
+			sortchoice_int = atoi(sortchoice);
+
+			if (sortchoice_int >= 1 && sortchoice_int <= col_index) {	// if got here, col_index guaranteed to be >= 1
+				if (StudentDB->columns[sortchoice_int - 1].column_id == COL_OTHER) {// we dont have handling for unexpected cols zktodo: fix?
+					printf("Invalid input, please try again or type \"exit\".\n");
+					continue;	//continue looping
+				}
+				col_answered = 1;
+			}
+			
+		} while (!col_answered);
+
+		Columns sort_col = StudentDB->columns[sortchoice_int - 1].column_id;
 
 		// Checks if they didn't input id or mark
-		if (_stricmp(sortchoice, "id") != 0 && _stricmp(sortchoice, "mark") != 0 && _stricmp(sortchoice, "name") != 0) {
-			printf("\nInvalid Input, please enter 'ID' or 'MARK'\n");
-			continue;
-		}
+		//if (_stricmp(sortchoice, "id") != 0 && _stricmp(sortchoice, "mark") != 0 && _stricmp(sortchoice, "name") != 0) {
+		//	printf("\nInvalid Input, please enter 'ID' or 'MARK'\n");
+		//	continue;
+		//}
 
 		printf("\nAscending or Descending?\nP2_7: ");
 		fgets(sortupdown, sizeof(sortupdown), stdin);
@@ -352,48 +406,52 @@ bool sort_fn(char* context) {
 			printf("\nInvalid Input, please enter 'ASCENDING' or 'DESCENDING'\n");
 			continue;
 		}
+		
 
-		struct Database* StudentDB = get_database(); //struct Student and function get_database() is in data.c
-		//int student_count = studentcount(); Old code 
-
-		if (StudentDB == NULL) {
-			printf("No Student Records could be found");
-			return false;
-		}
-
-		if (_stricmp(sortchoice, "id") == 0) {
-			printf("\nSorting by ID...");
+		if (sort_col == COL_ID) {	//zkchange: now it uses the columns from user file, oso it wont print sorting by ... twice
+			printf("\nSorting by ID");
 			if (_stricmp(sortupdown, "ascending") == 0) {
-				printf("\nSorting ID in Ascending Order...");
+				printf(" in Ascending Order...");
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compidup);
 			}
 			else if (_stricmp(sortupdown, "descending") == 0) {
-				printf("\nSorting ID in Descending Order...");
+				printf(" in Descending Order...");
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compiddown);
 			}
 		}
-		else if (_stricmp(sortchoice, "mark") == 0) {
-			printf("\nSorting by MARK...");
+		else if (sort_col == COL_MARK) {
+			printf("\nSorting by MARK");
 			if (_stricmp(sortupdown, "ascending") == 0) {
-				printf("\nSorting MARK in Ascending Order...");
+				printf(" in Ascending Order...");
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compmarkup);
 			}
 			else if (_stricmp(sortupdown, "descending") == 0) {
-				printf("\nSorting MARK in Descending Order...");
+				printf(" in Descending Order...");
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compmarkdown);
 			}
 		}
-		else if (_stricmp(sortchoice, "name") == 0) {
-			printf("\nSorting by NAME...");
+		else if (sort_col == COL_NAME) {
+			printf("\nSorting by NAME");
 			if (_stricmp(sortupdown, "ascending") == 0) {
-				printf("\nSorting NAME in Ascending Order...");
+				printf(" in Ascending Order...");
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compnameup);
 			}
 			else if (_stricmp(sortupdown, "descending") == 0) {
-				printf("\nSorting NAME in Descending Order...");
+				printf(" in Descending Order...");
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compnamedown);
 			}
 		}	
+		else if (sort_col == COL_PROGRAMME) {
+			printf("\nSorting by PROGRAMME");
+			if (_stricmp(sortupdown, "ascending") == 0) {
+				printf(" in Ascending Order...");
+				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compprogrammeup);
+			}
+			else if (_stricmp(sortupdown, "descending") == 0) {
+				printf(" in Descending Order...");
+				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compprogrammedown);
+			}
+		}
 		sorting = 0;
 	}
 	printf("\nSorting Successful.\n");

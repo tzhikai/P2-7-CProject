@@ -44,12 +44,14 @@ struct Database* get_database();
 
 Columns map_column(char* header_name);
 
-struct Student* id_search(int id);
+int id_search(int id);
 
 int validate_id(char* id, int row_number, struct Database* StudentDB);
 void validate_name(char* name, int row_number);
 void validate_programme(char* programme, int row_number);
 float validate_mark(char* mark, int row_number);
+
+void recheck_widths(struct Database* StudentDB);
 
 int parse_headers(char* header_line, struct Database* StudentDB);
 int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* current_student, int row_number);

@@ -44,20 +44,20 @@ Columns map_column(char* header_name) {	// from header of column in input file, 
 	return COL_OTHER;
 }
 
-struct Student* id_search(int id) {
+int id_search(int id) {
 	struct Database* StudentDB = get_database();
 
 	if (StudentDB == NULL) {
-		return NULL;
+		return -1;
 	}
 
 	for (int i = 0; i < StudentDB->size; i++) {
 		if (StudentDB->StudentRecord[i].id == id) {
-			return &StudentDB->StudentRecord[i];	// returns memory addr of the Student w the given id
+			return i;	// returns index of student w matching (unique) id
 		}
 	}
 
-	return NULL;	// could not find the id in StudentRecord
+	return -1;	// could not find the id in StudentRecord
 
 }
 
@@ -94,7 +94,7 @@ int validate_id(char* id, int row_number, struct Database* StudentDB) {
 
 			printf(". Skipping row.\n");
 
-			return 1;
+			return 2;	// slightly different to differentiate different uses (validate_id > 0 = invalid new id, validate_id < 2 = invalid access id)
 		}
 	}
 
@@ -186,6 +186,17 @@ float validate_mark(char* mark, int row_number) {
 	// round off to 1dp (*10 gets rid of first dp, round off, then /10 gives it back)
 	mark_value = roundf(mark_value * 10.0f) / 10.0f;
 	return mark_value;
+}
+
+// for use in INSERT, UPDATE, DELETE (these change datapoints)
+void recalc_col_widths(struct Database* StudentDB, struct Student* recordAdded, struct Student* recordToDelete) {
+	// if recordAdded is not NULL, we
+	
+	if (StudentDB == NULL || StudentDB->columns == NULL) {
+		return;	//no change
+	}
+
+	
 }
 
 int parse_headers(char* header_line, struct Database* StudentDB) {
