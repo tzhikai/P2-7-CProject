@@ -8,5 +8,4 @@ void clean_input(char command[]);
 
 void join_words(char input[]);
 
-
 #endif // !INPUT_H

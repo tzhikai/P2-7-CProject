@@ -44,6 +44,8 @@ struct Database* get_database();
 
 Columns map_column(char* header_name);
 
+struct Student* id_search(int id);
+
 int validate_id(char* id, int row_number, struct Database* StudentDB);
 void validate_name(char* name, int row_number);
 void validate_programme(char* programme, int row_number);

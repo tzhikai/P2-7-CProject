@@ -3,6 +3,7 @@
 #include <ctype.h>
 
 #include "utils.h"
+#include "data.h"
 
 
 // cleans up user input command before checking if it can be executed
@@ -70,3 +71,4 @@ int countid(int command) {
 	}
 	return count;
 }
+

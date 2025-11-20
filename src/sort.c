@@ -20,14 +20,16 @@ int compiddown(const void* a, const void* b) {
 int compnameup(const void* a, const void* b) {
 	const struct Student* StudentA = (const struct Student*)a;
 	const struct Student* StudentB = (const struct Student*)b;
-	return StudentA->name[0] - StudentB->name[0];
+	//return StudentA->name[0] - StudentB->name[0];
+	return strcmp(StudentA->name, StudentB->name);	//zkchange: name[0] means Tim and Tom are the same
 }
 
 // Descending Name Sort
 int compnamedown(const void* a, const void* b) {
 	const struct Student* StudentA = (const struct Student*)a;
 	const struct Student* StudentB = (const struct Student*)b;
-	return StudentB->name[0] - StudentA->name[0];
+	//return StudentB->name[0] - StudentA->name[0];
+	return strcmp(StudentB->name, StudentA->name); //zkchange: name[0] means Tim and Tom are the same
 }
 
 // Ascending Mark Sort

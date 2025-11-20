@@ -167,7 +167,8 @@ bool showall_fn(char* context) {
 };
 
 // jaison delete function
-struct Database* delete_fn(char* context) {
+// zkchange: should be bool since thats what run_command expects, and theres no need to return the newDB when we use set_database
+bool delete_fn(char* context) {
 	char cnfm[6], idbuffer[10];
 	int deleting = 1;
 	while (deleting == 1) {
@@ -183,7 +184,7 @@ struct Database* delete_fn(char* context) {
 		fgets(idbuffer, sizeof(idbuffer), stdin);
 		clean_input(idbuffer); //Accept id as string for cleanup
 
-		for (int i = 0; i < sizeof(StudentDB->size); i++) {
+		for (int i = 0; i < StudentDB->size; i++) {	//zkchange: u were looping less than sizeof(size)
 			if (validate_id(idbuffer, i, StudentDB) == 1) {
 				printf("\nPlease enter a valid ID");
 				continue;
@@ -207,6 +208,16 @@ struct Database* delete_fn(char* context) {
 		int indexdelete = -1;  // Initialize indexdelete to -1 to check if ID to delete exists
 		int cnfmdeleting = 0; // Initialize cnfmdeleting to enter confirmation loop if ID to delete exists
 
+		//struct Student* recordToDelete = id_search(iddelete);	//zkchange i made this a fn (and it returns ptr to the thign to delete instead)
+
+		//if (recordToDelete == NULL) {
+		//	printf("\nThe record with ID=%d does not exist\n", iddelete); //Debug
+		//	deleting = 0;
+		//	return false;
+		//}
+		//else {
+		//	cnfmdeleting = 1; //Starts confirmation loop
+		//}
 			
 		// Checks record.id if it matches userinput iddelete
 		for (int i = 0; i < StudentDB->size; i++) {
@@ -218,7 +229,7 @@ struct Database* delete_fn(char* context) {
 			}
 		}
 		
-		// ID to delete does not exist
+		//// ID to delete does not exist
 		if (indexdelete == -1) {
 			printf("\nThe record with ID=%d does not exist\n", iddelete); //Debug
 			deleting = 0;
@@ -244,16 +255,19 @@ struct Database* delete_fn(char* context) {
 				*/
 
 				struct Database* NEWdb = malloc(sizeof(struct Database)); //Initialize NEWdb to copy old database excluding deleted record
+				
+				if (NEWdb == NULL) {
+					printf("\nMemory alocation for new database failed.");
+					break;
+				}
+				
 				NEWdb = cpyDatabaseDetails(StudentDB, NEWdb); // Refer to 'jaison addition' in data.c & data.h
 				
 				NEWdb->StudentRecord = malloc(sizeof(struct Student) * (StudentDB->size - 1));
 				NEWdb->size = StudentDB->size - 1;
 				int newindex = 0;
 				
-				if (NEWdb == NULL) {
-					printf("\nNEW Database Creation Failed.");
-					break;
-				}
+				
 
 				struct Student* NEWrecord = NEWdb->StudentRecord;
 
@@ -292,12 +306,12 @@ struct Database* delete_fn(char* context) {
 				printf("\nThe record with ID=%d is successfully deleted\n", iddelete);
 				cnfmdeleting = 0;
 				deleting = 0;
-				return NEWdb;
+				return true;
 			}
 			else if (_stricmp(cnfm, "n") == 0) {
 					printf("\nThe deletion is cancelled.\n");
 					cnfmdeleting = 0;
-					return StudentDB;
+					return true;
 			}
 			else {
 					printf("\nPlease enter either 'Y' or 'N'\n");
@@ -386,12 +400,40 @@ bool sort_fn(char* context) {
 	return true;
 }
 
+bool undo_fn(char* context){
+	printf("Undo function not yet implemented.\n");
+
+	clean_input(context);
+
+	int undo_count = 1;
+
+	// decide how many undos to do
+	if (context != NULL && context[0] != '\0') {
+
+		char buffer[20];
+		if (sscanf_s(context, "%d", &buffer) != 0) {
+			printf("Invalid undo amount specified, please use an integer.\n");
+			return false;
+		}
+
+		undo_count = atoi(context);
+	}
+	printf("here %d\n", undo_count);
+	while (undo_count > 0) {
+		printf("Performing undo %d...\n", undo_count);
+		undo_count--;
+	}
+
+	return true;
+}
+
 // array of available commands (all new ones go in here)
 struct operation operations[] = {
 	{"OPEN", 1, open_fn},
 	{"SHOW ALL", 2, showall_fn},
 	{"SORT", 1, sort_fn},
-	{"DELETE", 1, delete_fn}
+	{"DELETE", 1, delete_fn},
+	{"UNDO", 1, undo_fn}
 };
 
 // handles the execution of operation based on user input command

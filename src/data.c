@@ -44,6 +44,23 @@ Columns map_column(char* header_name) {	// from header of column in input file, 
 	return COL_OTHER;
 }
 
+struct Student* id_search(int id) {
+	struct Database* StudentDB = get_database();
+
+	if (StudentDB == NULL) {
+		return NULL;
+	}
+
+	for (int i = 0; i < StudentDB->size; i++) {
+		if (StudentDB->StudentRecord[i].id == id) {
+			return &StudentDB->StudentRecord[i];	// returns memory addr of the Student w the given id
+		}
+	}
+
+	return NULL;	// could not find the id in StudentRecord
+
+}
+
 // since ID is like the primary key of the db, must be unique and correct
 int validate_id(char* id, int row_number, struct Database* StudentDB) {
 	int year = 25;	// zktodo: put this in struct? or make this auto calc from curr year?
