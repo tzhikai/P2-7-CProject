@@ -536,16 +536,16 @@ bool update_fn(char* context) {
 	int targetID;
 	printf("CMS: Enter the student ID to update: ");
 
-	// Validate ID input
+	// Validate numeric ID
 	while (scanf_s("%d", &targetID) != 1) {
 		printf("CMS: Invalid ID. Please enter a numeric student ID: ");
 		while (getchar() != '\n');
 	}
 	while (getchar() != '\n');
 
-	// ======== FIND THE RECORD ========
-	int i, foundIndex = -1;
-	for (i = 0; i < StudentDB->size; i++) {
+	// Find record
+	int foundIndex = -1;
+	for (int i = 0; i < StudentDB->size; i++) {
 		if (StudentDB->StudentRecord[i].id == targetID) {
 			foundIndex = i;
 			break;
@@ -563,72 +563,19 @@ bool update_fn(char* context) {
 	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
 		s->id, s->name, s->programme, s->mark);
 
-	printf("\n=== Enter New Data (Press Enter to skip a field) ===\n");
+	printf("\n=== Enter New Data (Press Enter to skip) ===\n");
 
-	// ======== NAME (skip allowed) ========
-	char buffer[100];
-	printf("Enter new name (letters & spaces only, Enter = skip): ");
+	// Use helpers
+	read_optional_string(s->name, sizeof(s->name),
+		"Enter new name (letters & spaces only, Enter = skip): ");
 
-	fgets(buffer, sizeof(buffer), stdin);
+	read_optional_string(s->programme, sizeof(s->programme),
+		"Enter new programme (letters & spaces only, Enter = skip): ");
 
-	if (buffer[0] != '\n') { // user typed something
-		buffer[strcspn(buffer, "\n")] = 0; // remove newline
+	read_optional_mark(&s->mark,
+		"Enter new mark (0-100, Enter = skip): ");
 
-		bool valid = true;
-		for (int j = 0; buffer[j] != '\0'; j++) {
-			if (!isalpha(buffer[j]) && buffer[j] != ' ') {
-				valid = false;
-				break;
-			}
-		}
-
-		if (!valid) {
-			printf("CMS: Invalid name. Update skipped for this field.\n");
-		}
-		else {
-			strcpy_s(s->name, sizeof(s->name), buffer);
-		}
-	}
-
-	// ======== PROGRAMME (skip allowed) ========
-	printf("Enter new programme (letters & spaces only, Enter = skip): ");
-	fgets(buffer, sizeof(buffer), stdin);
-
-	if (buffer[0] != '\n') {
-		buffer[strcspn(buffer, "\n")] = 0;
-
-		bool valid = true;
-		for (int j = 0; buffer[j] != '\0'; j++) {
-			if (!isalpha(buffer[j]) && buffer[j] != ' ') {
-				valid = false;
-				break;
-			}
-		}
-
-		if (!valid) {
-			printf("CMS: Invalid programme. Update skipped for this field.\n");
-		}
-		else {
-			strcpy_s(s->programme, sizeof(s->programme), buffer);
-		}
-	}
-
-	// ======== MARK (skip allowed) ========
-	printf("Enter new mark (0-100, Enter = skip): ");
-	fgets(buffer, sizeof(buffer), stdin);
-
-	if (buffer[0] != '\n') {
-		float newMark;
-
-		if (sscanf_s(buffer, "%f", &newMark) == 1 && newMark >= 0 && newMark <= 100) {
-			s->mark = newMark;
-		}
-		else {
-			printf("CMS: Invalid mark. Update skipped for this field.\n");
-		}
-	}
-
-	printf("CMS: The record with ID=%d is successfully updated.\n", targetID);
+	printf("CMS: Record with ID=%d successfully updated.\n", targetID);
 	return true;
 }
 

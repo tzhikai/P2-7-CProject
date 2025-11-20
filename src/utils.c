@@ -5,6 +5,33 @@
 #include "utils.h"
 #include "data.h"
 
+// proto hy
+void clean_input(char command[]) {
+	char* last = command + strlen(command) - 1;
+	while (last >= command && isspace(*last)) last--;
+	*(last + 1) = '\0';
+
+	char* first = command;
+	while (isspace(*first)) first++;
+
+	if (first != command)
+		memmove(command, first, strlen(first) + 1);
+}
+
+bool is_valid_name(const char* s) {
+	for (int i = 0; s[i]; i++) {
+		if (!isalpha(s[i]) && s[i] != ' ')
+			return false;
+	}
+	return true;
+}
+
+bool read_line(char* buffer, int size) {
+	if (fgets(buffer, size, stdin) == NULL)
+		return false;
+	clean_input(buffer);
+	return true;
+}
 
 // cleans up user input command before checking if it can be executed
 void clean_input(char command[]) {
