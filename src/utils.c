@@ -6,21 +6,6 @@
 #include "data.h"
 
 // proto hy
-bool is_valid_name(const char* s) {
-	for (int i = 0; s[i]; i++) {
-		if (!isalpha(s[i]) && s[i] != ' ')
-			return false;
-	}
-	return true;
-}
-
-bool read_line(char* buffer, int size) {
-	if (fgets(buffer, size, stdin) == NULL)
-		return false;
-	clean_input(buffer);
-	return true;
-}
-
 bool read_optional_string(char* buffer, int size, const char* prompt) {
 	char temp[200];
 
