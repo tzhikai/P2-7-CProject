@@ -650,6 +650,118 @@ bool update_fn(char* context) {
 	return true;
 }
 
+// =====================================================
+// INSERT FUNCTION
+// =====================================================
+bool insert_fn(char* context) {
+	struct Database* db = get_database();
+	if (db == NULL) {
+		printf("CMS: Please OPEN the database first.\n");
+		return false;
+	}
+
+	struct Student newStudent = { 0 };
+
+	printf("Enter Student ID: ");
+	while (scanf_s("%d", &newStudent.id) != 1) {
+		printf("Invalid input. Please enter a numeric ID: ");
+		while (getchar() != '\n');
+	}
+
+	if (id_search(newStudent.id) != -1) {
+		printf("CMS: Duplicate ID found. Cannot insert.\n");
+		while (getchar() != '\n');
+		return false;
+	}
+
+	printf("Enter Name: ");
+	scanf_s(" %[^\n]", newStudent.name, (unsigned)_countof(newStudent.name));
+
+	printf("Enter Programme: ");
+	scanf_s(" %[^\n]", newStudent.programme, (unsigned)_countof(newStudent.programme));
+
+	printf("Enter Mark: ");
+	while (scanf_s("%f", &newStudent.mark) != 1 || newStudent.mark < 0 || newStudent.mark > 100) {
+		printf("Invalid mark. Please enter between 0 and 100: ");
+		while (getchar() != '\n');
+	}
+
+	add_student(newStudent);
+	printf("New student inserted successfully.\n");
+	save_database(db, db->filepath);
+
+	return true;
+}
+
+// =====================================================
+// QUERY FUNCTION
+// =====================================================
+bool query_fn(char* context) {
+	struct Database* db = get_database();
+	if (db == NULL) {
+		printf("CMS: Please OPEN the database first.\n");
+		return false;
+	}
+
+	if (context == NULL || strlen(context) == 0) {
+		printf("Please provide a keyword (ID, name, or programme): ");
+		char input[100];
+		fgets(input, sizeof(input), stdin);
+		clean_input(input);
+		context = input;
+	}
+
+	char keyword[100];
+	strcpy_s(keyword, sizeof(keyword), context);
+	for (int i = 0; keyword[i]; i++) keyword[i] = tolower(keyword[i]);
+
+	bool found = false;
+	printf("Results for \"%s\":\n", context);
+
+	for (int i = 0; i < db->size; i++) {
+		char name[100], programme[100];
+		strcpy_s(name, sizeof(name), db->StudentRecord[i].name);
+		strcpy_s(programme, sizeof(programme), db->StudentRecord[i].programme);
+		for (int j = 0; name[j]; j++) name[j] = tolower(name[j]);
+		for (int j = 0; programme[j]; j++) programme[j] = tolower(programme[j]);
+
+		char id_str[20];
+		sprintf_s(id_str, sizeof(id_str), "%d", db->StudentRecord[i].id);
+
+		if (strstr(name, keyword) || strstr(programme, keyword) || strstr(id_str, keyword)) {
+			printf("%-8d %-25s %-30s %.1f\n",
+				db->StudentRecord[i].id,
+				db->StudentRecord[i].name,
+				db->StudentRecord[i].programme,
+				db->StudentRecord[i].mark);
+			found = true;
+		}
+	}
+
+	if (!found) {
+		printf("No matching record found for \"%s\".\n", context);
+	}
+	return true;
+}
+
+// =====================================================
+// SAVE FUNCTION
+// =====================================================
+bool save_fn(char* context) {
+	struct Database* db = get_database();
+	if (db == NULL) {
+		printf("CMS: Please OPEN the database first.\n");
+		return false;
+	}
+
+	save_database(db, db->filepath);
+
+	printf("CMS: File saved successfully.\n");
+	return true;
+}
+
+
+
 // array of available commands (all new ones go in here)
 struct operation operations[] = {
 	{"OPEN", 1, open_fn},
@@ -658,7 +770,10 @@ struct operation operations[] = {
 	{"DELETE", 1, delete_fn},
 	{"UNDO", 1, undo_fn},
 	{ "SHOW SUMMARY", 2, summary_fn },
-	{ "UPDATE", 1, update_fn }
+	{ "UPDATE", 1, update_fn },
+	{"INSERT", 1, insert_fn},
+	{"QUERY", 1, query_fn},
+	{"SAVE", 1, save_fn}
 };
 
 // handles the execution of operation based on user input command
