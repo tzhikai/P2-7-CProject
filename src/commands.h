@@ -12,7 +12,6 @@ struct operation {
 
 // hy test functions
 bool summary_fn(char* context);
-void showSummary();
 
 // function prototypes
 bool open_fn(char* filename);	// context in this means filename 

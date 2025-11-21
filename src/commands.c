@@ -511,58 +511,48 @@ bool undo_fn(char* context){
 }
 
 // HY 
-struct Summary compute_summary(struct Database* db) {
-	struct Summary sum = { 0 };
-	sum.highest = -FLT_MAX;
-	sum.lowest = FLT_MAX;
+void print_summary(struct Database* db) {
+	if (db == NULL || db->size == 0) {
+		printf("CMS: No records found.\n");
+		return;
+	}
 
+	float highest = -FLT_MAX;
+	float lowest = FLT_MAX;
 	float total = 0;
+	int highestIndex = 0;
+	int lowestIndex = 0;
 
 	for (int i = 0; i < db->size; i++) {
 		float m = db->StudentRecord[i].mark;
 		total += m;
 
-		if (m > sum.highest) {
-			sum.highest = m;
-			sum.highestIndex = i;
+		if (m > highest) {
+			highest = m;
+			highestIndex = i;
 		}
-		if (m < sum.lowest) {
-			sum.lowest = m;
-			sum.lowestIndex = i;
+		if (m < lowest) {
+			lowest = m;
+			lowestIndex = i;
 		}
 	}
 
-	sum.average = total / db->size;
-	return sum;
-}
+	float average = total / db->size;
 
-// hy print functions
-void print_student(const struct Student* s) {
-	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
-		s->id, s->name, s->programme, s->mark);
-}
-
-void print_summary(const struct Summary* sum, struct Database* db) {
 	printf("CMS: Summary Statistics\n");
 	printf("Total number of students: %d\n", db->size);
-	printf("Average mark: %.2f\n", sum->average);
-	printf("Highest mark: %.1f (%s)\n",
-		sum->highest, db->StudentRecord[sum->highestIndex].name);
-	printf("Lowest mark: %.1f (%s)\n",
-		sum->lowest, db->StudentRecord[sum->lowestIndex].name);
+	printf("Average mark: %.2f\n", average);
+
+	printf("Highest mark: %.2f (%s)\n",
+		highest, db->StudentRecord[highestIndex].name);
+
+	printf("Lowest mark: %.2f (%s)\n",
+		lowest, db->StudentRecord[lowestIndex].name);
 }
 
-// hy summary function
 bool summary_fn(char* context) {
 	struct Database* db = get_database();
-	if (!db || db->size == 0) {
-		printf("CMS: No records found.\n");
-		return false;
-	}
-
-	struct Summary s = compute_summary(db);
-	print_summary(&s, db);
-
+	print_summary(db);
 	return true;
 }
 
