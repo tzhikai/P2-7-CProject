@@ -57,20 +57,172 @@ void join_words(char input[]) {
 
 }
 
-// Counts digits of positive or negative integer by division of 10, returns 1 if 0
-int countid(int command) {
-	int count = 0;
 
-	command = abs(command);
+char* extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* StudentDB) {
+	char* cmd_ptr = NULL;
+	char* context = NULL;
 
-	if (command == 0) {
-		return 1;
+	if (extrainput != NULL && extrainput[0] != '\0') {
+		char input_copy[50];
+		strcpy_s(input_copy, sizeof(input_copy), extrainput);
+		printf("context first: %s\n", input_copy);
+		// correct would be UPDATE ID=<value>, this could mean UPDATE 2500123
+		if (strchr(input_copy, '=') == NULL) {
+			printf("Extra input invalid. Use <field>=<value>\n");
+			return NULL;
+		}
+
+		
+		cmd_ptr = strtok_s(input_copy, "=", &context); // get first header (before =)
+
+		clean_input(cmd_ptr);
+
+		// check if first word/field is ID, since ID is primary key
+		if (map_column(cmd_ptr) != COL_ID) {	// eg UPDATE NAME=John Souls	
+			printf("Extra input invalid. First field must be ID.\n");
+			return NULL;
+		}
+		else {
+			printf("trial last\n");
+			// able to split by string here because it is for ID, which is 7 consecutive digits only
+			cmd_ptr = strtok_s(NULL, " ", &context);
+			clean_input(cmd_ptr);
+			;
+			if (cmd_ptr != NULL) {
+				switch (validate_id(cmd_ptr, -1, StudentDB)) {
+				case 1:
+					printf("Extra input invalid. ID invalid.\n");
+					return NULL;
+				case 0:
+					printf("Extra input invalid. ID not found.\n");
+					return NULL;
+				case 2:
+					*id_ptr = atoi(cmd_ptr);
+					printf("ID %s found, now is %d.\n", cmd_ptr, *id_ptr);
+					break;
+				}
+			}
+		}
+	}
+	else {
+		return NULL;
 	}
 
-	while (command > 0) {
-		command /= 10;
-		count++;
+	if (cmd_ptr == NULL) {
+		return NULL;
 	}
-	return count;
+
+	char* remaining = strstr(extrainput, cmd_ptr);
+	if (remaining) {
+		remaining += strlen(cmd_ptr);	// go past id value
+		while (*remaining == ' ') {
+			remaining++;
+		}
+		if (*remaining != '\0') {
+			printf("Remaining context: %s\n", remaining);
+			return _strdup(remaining);
+		}
+	}
+
+	//printf("Returning context: %s\n", context);
+	return NULL;
 }
 
+int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, struct Database* StudentDB) {
+	// input eg Mark=85.5 Name=John Souls Programme=Digital Supply Chain
+	// find = to get Mark, then check for = to see if theres another header, if not then rest is value, if so then remove everything after the last space
+
+	if (extrainput == NULL || extrainput[0] == '\0') {
+		printf("no extra input\n");
+		return 0;
+	}
+
+	char input_copy[50];
+	strcpy_s(input_copy, sizeof(input_copy), extrainput);
+
+	int pair_count = 0;
+	char header[20], value[50];
+
+	char* context = NULL;
+	char* extra_ptr = strtok_s(input_copy, " ", &context);	// extracts the first word
+
+	int value_flag = 0, invalid_flag = 0;
+
+	while (extra_ptr != NULL) {
+		printf("handling %s rn\n", extra_ptr);
+		char* equal_ptr = strchr(extra_ptr, '=');	// finds = in word, if exists
+
+		if (equal_ptr != NULL) {	// if = means its a header=value pair, if no = means its a continued value
+			// means we were previously handling a pair, so now can save this and move on
+			printf("pointer %s has an equals\n", extra_ptr);
+			if (value_flag) {
+				clean_input(header);
+				clean_input(value);
+				Columns col_id = map_column(header);
+				invalid_flag = 0;
+				switch (col_id) {
+					case COL_ID:
+						if (validate_id(value, -1, StudentDB) != 2) {	// -1 cuz not from file, so no row number
+							//printf("Extra field invalid. ID invalid.\n");
+							invalid_flag = 1;
+						}
+						break;
+					case COL_NAME:
+						validate_name(value, -1);
+						break;
+					case COL_PROGRAMME:
+						validate_name(value, -1);
+						validate_programme(value, -1);
+						break;
+					case COL_MARK:
+						if (validate_mark(value, -1) < 0) {
+							//printf("Extra field invalid. Mark invalid.\n");
+							invalid_flag = 1;
+						}
+						break;
+				}
+
+				if (col_id != COL_OTHER && !invalid_flag) {	// if excpected header
+					hvpair[pair_count].column_id = col_id;
+					strcpy_s(hvpair[pair_count].datapoint, sizeof(hvpair[pair_count].datapoint), value);
+					printf("Saving pair of %s = %s\n", header, value);
+					pair_count++;
+				}
+			}
+
+
+			*equal_ptr = '\0';	// splits string into 2 parts, header and value
+			strcpy_s(header, sizeof(header), extra_ptr); // header is before the =
+			char* value_ptr = equal_ptr + 1; // value is after the =
+			strcpy_s(value, sizeof(value), value_ptr);
+			value_flag = 1;	// rmb that we are checking for continued values
+
+
+
+		}
+		else if (value_flag) {	// means continued value, concat it to end of prev value
+			strcat_s(value, sizeof(value), " ");
+			clean_input(extra_ptr);
+			strcat_s(value, sizeof(value), extra_ptr);
+		}
+
+		extra_ptr = strtok_s(NULL, " ", &context);
+	}
+
+	// after loop, still got last pair remaining
+	if (value_flag) {
+		clean_input(value);
+		Columns col_id = map_column(header);
+
+		if (col_id != COL_OTHER) {	// if excpected header
+			hvpair[pair_count].column_id = col_id;
+			strcpy_s(hvpair[pair_count].datapoint, sizeof(hvpair[pair_count].datapoint), value);
+			printf("Saving pair of %s = %s\n", header, value);
+			pair_count++;
+		}
+	}
+
+	return pair_count;
+
+	
+}

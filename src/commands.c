@@ -556,6 +556,10 @@ bool summary_fn(char* context) {
 	return true;
 }
 
+
+
+
+
 //hy update
 bool update_fn(char* context) {
 	struct Database* db = get_database();
@@ -564,14 +568,27 @@ bool update_fn(char* context) {
 		return false;
 	}
 
-	// ask for ID
-	int id;
-	printf("CMS: Enter the student ID to update: ");
-	while (scanf_s("%d", &id) != 1) {
-		printf("CMS: Invalid ID. Enter a numeric ID: ");
-		while (getchar() != '\n'); // clear input buffer
+	int id = 0;
+	int* id_ptr = &id;	// for passing by reference to extract_extrainput_id
+
+	char* remaining = extract_extrainput_values(id_ptr, context, db);
+	
+	/*if (remaining != NULL) {
+		printf("Remaining: %s\n", remaining);	
 	}
-	while (getchar() != '\n'); // remove leftover newline
+	else {
+		printf("No extra input values detected.\n");
+	}*/
+
+	if (id == 0) {
+		// ask for ID
+		printf("CMS: Enter the student ID to update: ");
+		while (scanf_s("%d", &id) != 1) {
+			printf("CMS: Invalid ID. Enter a numeric ID: ");
+			while (getchar() != '\n'); // clear input buffer
+		}
+		while (getchar() != '\n'); // remove leftover newline
+	}
 
 	// Use your existing id_search()
 	int idx = id_search(id);
@@ -586,51 +603,85 @@ bool update_fn(char* context) {
 	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
 		s->id, s->name, s->programme, s->mark);
 
-	printf("\n=== Enter New Data (Press Enter to skip) ===\n\n");
+	int hvp_count = 0;
+	struct HeaderValuePair* hvp_array = NULL;
+	if (remaining != NULL) {
+		// create a list of header-value pairs (like python dictionary!) from the remaining cmd_ptr (if any)
+		const int max_pairs = db->column_count;	// can limit pair amt to number of cols
+		hvp_array = calloc(max_pairs, sizeof(struct HeaderValuePair));	// wont need to realloc since using max possible amt
+		hvp_count = extract_extrainput_values(hvp_array, remaining, db);
 
-	char buf[100];
+	}
 
-	for (int i = 0; i < db->column_count; i++) {
-		printf("Enter new %s (Enter = skip): ", db->columns[i].header_name);
-
-		if (!fgets(buf, sizeof(buf), stdin)) continue; // read input
-		size_t len = strlen(buf);
-		if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0'; // remove newline
-
-		if (strlen(buf) == 0) continue; // skip if empty
-
-		switch (db->columns[i].column_id) {
-		case COL_ID:
-			printf("[Skipping ID – cannot be modified]\n");
-			break;
-
-		case COL_NAME:
-			validate_name(buf, idx); // your validate_name modifies buf in-place
-			strcpy_s(s->name, sizeof(s->name), buf);
-			break;
-
-		case COL_PROGRAMME:
-			validate_name(buf, idx); // capitalize properly
-			validate_programme(buf, idx); // ensure valid programme
-			strcpy_s(s->programme, sizeof(s->programme), buf);
-			break;
-
-		case COL_MARK: {
-			float mark = validate_mark(buf, idx); // returns -1 if invalid
-			if (mark >= 0.0f) {
-				s->mark = mark;
+	if (hvp_count > 0) {
+		for (int i = 0; i < hvp_count; i++) {
+			switch (hvp_array[i].column_id) {
+				case COL_ID:
+					s->id = atoi(hvp_array[i].datapoint);
+					break;
+				case COL_NAME:
+					strcpy_s(s->name, sizeof(s->name), hvp_array[i].datapoint);
+					break;
+				case COL_PROGRAMME:
+					strcpy_s(s->programme, sizeof(s->programme), hvp_array[i].datapoint);
+					break;
+				case COL_MARK:
+					s->mark = atof(hvp_array[i].datapoint);
+					break;
+				case COL_OTHER:
+					break;
 			}
-			else {
-				printf("Invalid mark. Keeping previous value.\n");
-			}
-			break;
 		}
+		//free(remaining);
+	}
+	else {
+		printf("\n=== Enter New Data (Press Enter to skip) ===\n\n");
 
-		default:
-			printf("[Unknown column — skipped]\n");
-			break;
+		char buf[100];
+
+		for (int i = 0; i < db->column_count; i++) {
+			printf("Enter new %s (Enter = skip): ", db->columns[i].header_name);
+
+			if (!fgets(buf, sizeof(buf), stdin)) continue; // read input
+			size_t len = strlen(buf);
+			if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0'; // remove newline
+
+			if (strlen(buf) == 0) continue; // skip if empty
+
+			switch (db->columns[i].column_id) {
+			case COL_ID:
+				printf("[Skipping ID – cannot be modified]\n");
+				break;
+
+			case COL_NAME:
+				validate_name(buf, idx); // your validate_name modifies buf in-place
+				strcpy_s(s->name, sizeof(s->name), buf);
+				break;
+
+			case COL_PROGRAMME:
+				validate_name(buf, idx); // capitalize properly
+				validate_programme(buf, idx); // ensure valid programme
+				strcpy_s(s->programme, sizeof(s->programme), buf);
+				break;
+
+			case COL_MARK: {
+				float mark = validate_mark(buf, idx); // returns -1 if invalid
+				if (mark >= 0.0f) {
+					s->mark = mark;
+				}
+				else {
+					printf("Invalid mark. Keeping previous value.\n");
+				}
+				break;
+			}
+
+			default:
+				printf("[Unknown column — skipped]\n");
+				break;
+			}
 		}
 	}
+	
 
 	printf("\nCMS: Record with ID=%d successfully updated.\n", id);
 	return true;
