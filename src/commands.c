@@ -77,11 +77,11 @@ bool open_fn(char* context) {
 
 	set_database(StudentDB);	// store in static var for access from other functions
 	return true;
-	
+
 }
 
 bool showall_fn(char* context) {
-	
+
 	struct Database* StudentDB = get_database();
 
 	if (StudentDB == NULL) {
@@ -90,7 +90,7 @@ bool showall_fn(char* context) {
 	}
 
 	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
-	
+
 	//printf("%s and %s\n", StudentDB->databaseName, StudentDB->authors);
 	printf("Here are all the records found in the table \"%s\".\n", StudentDB->tableName);
 
@@ -117,7 +117,7 @@ bool showall_fn(char* context) {
 		printf("%*s\t", filler_width, "");
 	}
 	printf("\n");
-	
+
 	// print out the data rows, following header order
 	for (int student_index = 0; student_index < StudentDB->size; student_index++) {
 		// for each column in the row
@@ -126,33 +126,33 @@ bool showall_fn(char* context) {
 			char mark_str[10];
 
 			switch (StudentDB->columns[column_index].column_id) {
-				case COL_ID:
-					printf("%d", record[student_index].id);
-					// ID are fixed to 7 digits, so no extra spaces here
-					//printf("%*s", StudentDB->columns[column_index].max_width - strlen(record[student_index].id), "");
-					datapoint_width = 7;	// 7 digit id
-					break;
-				case COL_NAME:
-					printf("%s", record[student_index].name);
-					//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].name)), "");
-					datapoint_width = strlen(record[student_index].name);
-					break;
-				case COL_PROGRAMME:
-					printf("%s", record[student_index].programme);
-					//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].programme)), "");
-					datapoint_width = strlen(record[student_index].programme);
-					break;
-				case COL_MARK:
-					printf("%.1f", record[student_index].mark);	// %.1f below cuz %f gives smth like 0.000000 (width becomes too high)
-					sprintf_s(mark_str, sizeof(mark_str), "%.1f", record[student_index].mark);
-					datapoint_width = strlen(mark_str);
+			case COL_ID:
+				printf("%d", record[student_index].id);
+				// ID are fixed to 7 digits, so no extra spaces here
+				//printf("%*s", StudentDB->columns[column_index].max_width - strlen(record[student_index].id), "");
+				datapoint_width = 7;	// 7 digit id
+				break;
+			case COL_NAME:
+				printf("%s", record[student_index].name);
+				//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].name)), "");
+				datapoint_width = strlen(record[student_index].name);
+				break;
+			case COL_PROGRAMME:
+				printf("%s", record[student_index].programme);
+				//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].programme)), "");
+				datapoint_width = strlen(record[student_index].programme);
+				break;
+			case COL_MARK:
+				printf("%.1f", record[student_index].mark);	// %.1f below cuz %f gives smth like 0.000000 (width becomes too high)
+				sprintf_s(mark_str, sizeof(mark_str), "%.1f", record[student_index].mark);
+				datapoint_width = strlen(mark_str);
 
-					// Mark has a max possible length of 5 (100.0)
-					break;
-				case COL_OTHER:	// safety net	(not printing the value cuz im currently not storing those vals)
-					printf("N/A");
-					datapoint_width = 3;
-					break;
+				// Mark has a max possible length of 5 (100.0)
+				break;
+			case COL_OTHER:	// safety net	(not printing the value cuz im currently not storing those vals)
+				printf("N/A");
+				datapoint_width = 3;
+				break;
 			}
 
 			printf("%*s", (StudentDB->columns[column_index].max_width - datapoint_width), "");	// add spaces to align columns in print
@@ -166,6 +166,117 @@ bool showall_fn(char* context) {
 
 	return true;
 };
+
+// =====================================================
+// INSERT FUNCTION
+// =====================================================
+bool insert_fn(char* context) {
+	struct Database* db = get_database();
+	if (db == NULL) {
+		printf("CMS: Please OPEN the database first.\n");
+		return false;
+	}
+
+	struct Student newStudent = { 0 };
+
+	printf("Enter Student ID: ");
+	while (scanf_s("%d", &newStudent.id) != 1) {
+		printf("Invalid input. Please enter a numeric ID: ");
+		while (getchar() != '\n');
+	}
+
+	if (id_search(newStudent.id) != -1) {
+		printf("CMS: Duplicate ID found. Cannot insert.\n");
+		while (getchar() != '\n');
+		return false;
+	}
+
+	printf("Enter Name: ");
+	scanf_s(" %[^\n]", newStudent.name, (unsigned)_countof(newStudent.name));
+
+	printf("Enter Programme: ");
+	scanf_s(" %[^\n]", newStudent.programme, (unsigned)_countof(newStudent.programme));
+
+	printf("Enter Mark: ");
+	while (scanf_s("%f", &newStudent.mark) != 1 || newStudent.mark < 0 || newStudent.mark > 100) {
+		printf("Invalid mark. Please enter between 0 and 100: ");
+		while (getchar() != '\n');
+	}
+
+	add_student(newStudent);
+	printf("New student inserted successfully.\n");
+	save_database(db, db->filepath);
+
+	return true;
+}
+
+// =====================================================
+// QUERY FUNCTION
+// =====================================================
+bool query_fn(char* context) {
+	struct Database* db = get_database();
+	if (db == NULL) {
+		printf("CMS: Please OPEN the database first.\n");
+		return false;
+	}
+
+	if (context == NULL || strlen(context) == 0) {
+		printf("Please provide a keyword (ID, name, or programme): ");
+		char input[100];
+		fgets(input, sizeof(input), stdin);
+		clean_input(input);
+		context = input;
+	}
+
+	char keyword[100];
+	strcpy_s(keyword, sizeof(keyword), context);
+	for (int i = 0; keyword[i]; i++) keyword[i] = tolower(keyword[i]);
+
+	bool found = false;
+	printf("Results for \"%s\":\n", context);
+
+	for (int i = 0; i < db->size; i++) {
+		char name[100], programme[100];
+		strcpy_s(name, sizeof(name), db->StudentRecord[i].name);
+		strcpy_s(programme, sizeof(programme), db->StudentRecord[i].programme);
+		for (int j = 0; name[j]; j++) name[j] = tolower(name[j]);
+		for (int j = 0; programme[j]; j++) programme[j] = tolower(programme[j]);
+
+		char id_str[20];
+		sprintf_s(id_str, sizeof(id_str), "%d", db->StudentRecord[i].id);
+
+		if (strstr(name, keyword) || strstr(programme, keyword) || strstr(id_str, keyword)) {
+			printf("%-8d %-25s %-30s %.1f\n",
+				db->StudentRecord[i].id,
+				db->StudentRecord[i].name,
+				db->StudentRecord[i].programme,
+				db->StudentRecord[i].mark);
+			found = true;
+		}
+	}
+
+	if (!found) {
+		printf("No matching record found for \"%s\".\n", context);
+	}
+	return true;
+}
+
+// =====================================================
+// SAVE FUNCTION
+// =====================================================
+bool save_fn(char* context) {
+	struct Database* db = get_database();
+	if (db == NULL) {
+		printf("CMS: Please OPEN the database first.\n");
+		return false;
+	}
+
+	save_database(db, db->filepath);
+
+	printf("CMS: File saved successfully.\n");
+	return true;
+}
+
 
 // jaison delete function
 // zkchange: should be bool since thats what run_command expects, and theres no need to return the newDB when we use set_database
@@ -188,7 +299,7 @@ bool delete_fn(char* context) {
 			printf("\nNo records in database.");
 			break;
 		}
-		
+
 		if (idbuffer[0] == '\0') {	// means user just typed DELETE, no id initially given
 			printf("\nID to Delete: ");
 			fgets(idbuffer, sizeof(idbuffer), stdin);
@@ -210,16 +321,16 @@ bool delete_fn(char* context) {
 		//}
 
 		switch (validate_id(idbuffer, 0, StudentDB)) {
-			case 1:	// ID is invalid
-				printf("\nPlease enter a valid ID.");
-				idbuffer[0] = '\0'; // prompts fgets again to ask user for id again
-				continue;
-			case 0:	// ID is valid but not in use, nothing to delete
-				printf("\nID is not in use.");
-				idbuffer[0] = '\0';
-				continue;
-			case 2:	// ID is valid and in use, proceed to deleting
-				break;
+		case 1:	// ID is invalid
+			printf("\nPlease enter a valid ID.");
+			idbuffer[0] = '\0'; // prompts fgets again to ask user for id again
+			continue;
+		case 0:	// ID is valid but not in use, nothing to delete
+			printf("\nID is not in use.");
+			idbuffer[0] = '\0';
+			continue;
+		case 2:	// ID is valid and in use, proceed to deleting
+			break;
 		}
 
 
@@ -252,7 +363,7 @@ bool delete_fn(char* context) {
 			printf("\nFound record ID=%d at index %d\n", iddelete, indexdelete);
 			cnfmdeleting = 1; //Starts confirmation loop
 		}
-			
+
 		// Checks record.id if it matches userinput iddelete
 		//for (int i = 0; i < StudentDB->size; i++) {
 		//	if (record[i].id == iddelete) {
@@ -262,7 +373,7 @@ bool delete_fn(char* context) {
 		//		break;
 		//	}
 		//}
-		
+
 		//// ID to delete does not exist
 		//if (indexdelete == -1) {
 		//	printf("\nThe record with ID=%d does not exist\n", iddelete); //Debug
@@ -289,19 +400,19 @@ bool delete_fn(char* context) {
 				*/
 
 				struct Database* NEWdb = malloc(sizeof(struct Database)); //Initialize NEWdb to copy old database excluding deleted record
-				
+
 				if (NEWdb == NULL) {
 					printf("\nMemory alocation for new database failed.");
 					break;
 				}
-				
+
 				NEWdb = cpyDatabaseDetails(StudentDB, NEWdb); // Refer to 'jaison addition' in data.c & data.h
-				
+
 				NEWdb->StudentRecord = malloc(sizeof(struct Student) * (StudentDB->size - 1));
 				NEWdb->size = StudentDB->size - 1;
 				int newindex = 0;
-				
-				
+
+
 
 				struct Student* NEWrecord = NEWdb->StudentRecord;
 
@@ -309,7 +420,7 @@ bool delete_fn(char* context) {
 					printf("NEWrecord Memory allocation for StudentRecord failed.\n");
 					break;
 				}
-				
+
 				for (int i = 0; i < StudentDB->size; i++) {
 					printf("\nChecking Index %d\n", i); //Debug
 					if (i == indexdelete) {
@@ -332,7 +443,7 @@ bool delete_fn(char* context) {
 				*/
 
 				set_database(NEWdb);
-				
+
 				free(record);
 				free(StudentDB->columns);
 				free(StudentDB);
@@ -343,12 +454,12 @@ bool delete_fn(char* context) {
 				return true;
 			}
 			else if (_stricmp(cnfm, "n") == 0) {
-					printf("\nThe deletion is cancelled.\n");
-					cnfmdeleting = 0;
-					return true;
+				printf("\nThe deletion is cancelled.\n");
+				cnfmdeleting = 0;
+				return true;
 			}
 			else {
-					printf("\nPlease enter either 'Y' or 'N'\n");
+				printf("\nPlease enter either 'Y' or 'N'\n");
 			}
 		}
 	}
@@ -372,7 +483,7 @@ bool sort_fn(char* context) {
 	int col_index, sortchoice_int;	// storage ints to help w finding corresponding column
 	int col_answered = 0;	//decides if user's input is valid
 
-	
+
 	while (sorting == 1) {
 		//printf("\nSort:\nBy ID\nBy Mark\nBy Name\nP2_7: ");
 		printf("\nWhat column would you like to sort by? Type the corresponding number or \"exit\":\n");//zkchange: this what i meant by not hardcoding col names
@@ -412,7 +523,7 @@ bool sort_fn(char* context) {
 				}
 				col_answered = 1;
 			}
-			
+
 		} while (!col_answered);
 
 		Columns sort_col = StudentDB->columns[sortchoice_int - 1].column_id;
@@ -431,7 +542,7 @@ bool sort_fn(char* context) {
 			printf("\nInvalid Input, please enter 'ASCENDING' or 'DESCENDING'\n");
 			continue;
 		}
-		
+
 
 		if (sort_col == COL_ID) {	//zkchange: now it uses the columns from user file, oso it wont print sorting by ... twice
 			printf("\nSorting by ID");
@@ -465,7 +576,7 @@ bool sort_fn(char* context) {
 				printf(" in Descending Order...");
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compnamedown);
 			}
-		}	
+		}
 		else if (sort_col == COL_PROGRAMME) {
 			printf("\nSorting by PROGRAMME");
 			if (_stricmp(sortupdown, "ascending") == 0) {
@@ -483,7 +594,7 @@ bool sort_fn(char* context) {
 	return true;
 }
 
-bool undo_fn(char* context){
+bool undo_fn(char* context) {
 	printf("Undo function not yet implemented.\n");
 
 	clean_input(context);
@@ -569,80 +680,41 @@ bool summary_fn(char* context) {
 //hy update
 bool update_fn(char* context) {
 	struct Database* db = get_database();
-	if (db == NULL || db->StudentRecord == NULL) {
+	if (!db || !db->StudentRecord) {
 		printf("CMS: No database loaded. Please OPEN one first.\n");
 		return false;
 	}
 
-	// ask for ID
 	int id;
 	printf("CMS: Enter the student ID to update: ");
-	while (scanf_s("%d", &id) != 1) {
-		printf("CMS: Invalid ID. Enter a numeric ID: ");
-		while (getchar() != '\n'); // clear input buffer
-	}
-	while (getchar() != '\n'); // remove leftover newline
 
-	// Use your existing id_search()
-	int idx = id_search(id);
-	if (idx == -1) {
+	while (scanf_s("%d", &id) != 1) {
+		printf("Invalid ID. Enter numeric only: ");
+		while (getchar() != '\n');
+	}
+	while (getchar() != '\n');
+
+	int index = id_search(id);
+	if (index < 0) {
 		printf("CMS: The record with ID=%d does not exist.\n", id);
 		return false;
 	}
 
-	struct Student* s = &db->StudentRecord[idx];
+	struct Student* s = &db->StudentRecord[index];
 
 	printf("\nCMS: Record found.\n");
-	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
-		s->id, s->name, s->programme, s->mark);
+	print_student(s);
 
-	printf("\n=== Enter New Data (Press Enter to skip) ===\n\n");
+	printf("\n=== Enter New Data (Press Enter to skip) ===\n");
 
-	char buf[100];
+	read_optional_string(s->name, sizeof(s->name),
+		"Enter new name (letters & spaces only, Enter = skip): ");
+	read_optional_string(s->programme, sizeof(s->programme),
+		"Enter new programme (letters & spaces only, Enter = skip): ");
+	read_optional_mark(&s->mark,
+		"Enter new mark (0Â–100, Enter = skip): ");
 
-	for (int i = 0; i < db->column_count; i++) {
-		printf("Enter new %s (Enter = skip): ", db->columns[i].header_name);
-
-		if (!fgets(buf, sizeof(buf), stdin)) continue; // read input
-		size_t len = strlen(buf);
-		if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0'; // remove newline
-
-		if (strlen(buf) == 0) continue; // skip if empty
-
-		switch (db->columns[i].column_id) {
-		case COL_ID:
-			printf("[Skipping ID – cannot be modified]\n");
-			break;
-
-		case COL_NAME:
-			validate_name(buf, idx); // your validate_name modifies buf in-place
-			strcpy_s(s->name, sizeof(s->name), buf);
-			break;
-
-		case COL_PROGRAMME:
-			validate_name(buf, idx); // capitalize properly
-			validate_programme(buf, idx); // ensure valid programme
-			strcpy_s(s->programme, sizeof(s->programme), buf);
-			break;
-
-		case COL_MARK: {
-			float mark = validate_mark(buf, idx); // returns -1 if invalid
-			if (mark >= 0.0f) {
-				s->mark = mark;
-			}
-			else {
-				printf("Invalid mark. Keeping previous value.\n");
-			}
-			break;
-		}
-
-		default:
-			printf("[Unknown column — skipped]\n");
-			break;
-		}
-	}
-
-	printf("\nCMS: Record with ID=%d successfully updated.\n", id);
+	printf("CMS: Record with ID=%d successfully updated.\n", id);
 	return true;
 }
 
@@ -650,6 +722,9 @@ bool update_fn(char* context) {
 struct operation operations[] = {
 	{"OPEN", 1, open_fn},
 	{"SHOW ALL", 2, showall_fn},
+	{"INSERT", 1, insert_fn},
+	{"QUERY", 1, query_fn},
+	{"SAVE", 1, save_fn},
 	{"SORT", 1, sort_fn},
 	{"DELETE", 1, delete_fn},
 	{"UNDO", 1, undo_fn},
@@ -660,7 +735,7 @@ struct operation operations[] = {
 // handles the execution of operation based on user input command
 bool run_command(char command[]) {
 	// passed in command, without trailing or leading whitespaces
-	
+
 	char* context = NULL;
 	char* command_copy = _strdup(command);
 
