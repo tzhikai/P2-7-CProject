@@ -569,41 +569,80 @@ bool summary_fn(char* context) {
 //hy update
 bool update_fn(char* context) {
 	struct Database* db = get_database();
-	if (!db || !db->StudentRecord) {
+	if (db == NULL || db->StudentRecord == NULL) {
 		printf("CMS: No database loaded. Please OPEN one first.\n");
 		return false;
 	}
 
+	// ask for ID
 	int id;
 	printf("CMS: Enter the student ID to update: ");
-
 	while (scanf_s("%d", &id) != 1) {
-		printf("Invalid ID. Enter numeric only: ");
-		while (getchar() != '\n');
+		printf("CMS: Invalid ID. Enter a numeric ID: ");
+		while (getchar() != '\n'); // clear input buffer
 	}
-	while (getchar() != '\n');
+	while (getchar() != '\n'); // remove leftover newline
 
-	int index = id_search(id);
-	if (index < 0) {
+	// Use your existing id_search()
+	int idx = id_search(id);
+	if (idx == -1) {
 		printf("CMS: The record with ID=%d does not exist.\n", id);
 		return false;
 	}
 
-	struct Student* s = &db->StudentRecord[index];
+	struct Student* s = &db->StudentRecord[idx];
 
 	printf("\nCMS: Record found.\n");
-	print_student(s);
+	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
+		s->id, s->name, s->programme, s->mark);
 
-	printf("\n=== Enter New Data (Press Enter to skip) ===\n");
+	printf("\n=== Enter New Data (Press Enter to skip) ===\n\n");
 
-	read_optional_string(s->name, sizeof(s->name),
-		"Enter new name (letters & spaces only, Enter = skip): ");
-	read_optional_string(s->programme, sizeof(s->programme),
-		"Enter new programme (letters & spaces only, Enter = skip): ");
-	read_optional_mark(&s->mark,
-		"Enter new mark (0–100, Enter = skip): ");
+	char buf[100];
 
-	printf("CMS: Record with ID=%d successfully updated.\n", id);
+	for (int i = 0; i < db->column_count; i++) {
+		printf("Enter new %s (Enter = skip): ", db->columns[i].header_name);
+
+		if (!fgets(buf, sizeof(buf), stdin)) continue; // read input
+		size_t len = strlen(buf);
+		if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0'; // remove newline
+
+		if (strlen(buf) == 0) continue; // skip if empty
+
+		switch (db->columns[i].column_id) {
+		case COL_ID:
+			printf("[Skipping ID – cannot be modified]\n");
+			break;
+
+		case COL_NAME:
+			validate_name(buf, idx); // your validate_name modifies buf in-place
+			strcpy_s(s->name, sizeof(s->name), buf);
+			break;
+
+		case COL_PROGRAMME:
+			validate_name(buf, idx); // capitalize properly
+			validate_programme(buf, idx); // ensure valid programme
+			strcpy_s(s->programme, sizeof(s->programme), buf);
+			break;
+
+		case COL_MARK: {
+			float mark = validate_mark(buf, idx); // returns -1 if invalid
+			if (mark >= 0.0f) {
+				s->mark = mark;
+			}
+			else {
+				printf("Invalid mark. Keeping previous value.\n");
+			}
+			break;
+		}
+
+		default:
+			printf("[Unknown column — skipped]\n");
+			break;
+		}
+	}
+
+	printf("\nCMS: Record with ID=%d successfully updated.\n", id);
 	return true;
 }
 
