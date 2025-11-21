@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #ifndef DATA_H
 
 typedef enum {
@@ -16,8 +17,8 @@ struct ColumnMap {
 
 struct Student {
 	int id;					// eg 2500123
-	char name[50];			// eg Fake Name
-	char programme[50];		// eg Computer Science
+	char name[60];			// eg Fake Name
+	char programme[60];		// eg Computer Science
 	float mark;				// eg 82.1
 };
 
@@ -35,6 +36,15 @@ struct Database {	// zktodo: reorganise by section w comments
 	//char** column_names;			// list of column names extracted from input file (to be printed)
 	int column_count;				// amt of cols in input file
 };
+
+struct Summary {
+	float highest;
+	float lowest;
+	float average;
+	int highestIndex;
+	int lowestIndex;
+};
+
 
 struct Database* load_data(FILE *file);
 void free_database(struct Database* db);
@@ -60,13 +70,9 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 struct ColumnMap* cpyColumnMap(const struct ColumnMap* src, int count);
 struct Database* cpyDatabaseDetails(const struct Database* src, struct Database* dest);
 
-// hy
-struct Summary {
-	float average;
-	float highest;
-	float lowest;
-	int highestIndex;
-	int lowestIndex;
-};
+bool add_student(struct Student newStudent);
+void query_student(const char* keyword);
+bool save_database(struct Database* db, const char* filepath);
+
 
 #endif // !DATA_H
