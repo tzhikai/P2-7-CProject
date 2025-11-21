@@ -522,10 +522,17 @@ void print_summary(struct Database* db) {
 	float total = 0;
 	int highestIndex = 0;
 	int lowestIndex = 0;
+	int validCount = 0;
 
 	for (int i = 0; i < db->size; i++) {
 		float m = db->StudentRecord[i].mark;
+
+		// when mark is negative
+		if (m < 0) {
+			continue;
+		}
 		total += m;
+		validCount++;
 
 		if (m > highest) {
 			highest = m;
@@ -535,6 +542,13 @@ void print_summary(struct Database* db) {
 			lowest = m;
 			lowestIndex = i;
 		}
+	}
+
+	// Exception handling for negative marks
+	if (validCount == 0) {
+		printf("CMS: Summary Statistics\n");
+		printf("No valid marks to summarize (all marks are negative).\n");
+		return;
 	}
 
 	float average = total / db->size;
