@@ -24,7 +24,7 @@ Columns map_column(char* header_name) {	// from header of column in input file, 
 	join_words(header_name);
 
 	//printf("Header name: %s\n", header_name);
-	
+
 	if (_stricmp(header_name, "id") == 0) {
 		return COL_ID;
 	}
@@ -76,12 +76,12 @@ int validate_id(char* id, int row_number, struct Database* StudentDB) {
 	if (strlen(id) != 7) {		// must be 7 digits
 		printf("Row %d, ID %s has length of %d, must be 7. Skipping row.\n", row_number, id, (int)strlen(id));
 		return 1;
-	}	
+	}
 	if (id_value < 0 ||							// eg 2600000 onwards not allowed
-		id_value >= ((year + 1) * 100000)) {		
+		id_value >= ((year + 1) * 100000)) {
 		printf("Row %d, ID %s is outside of valid ID range. Skipping row.\n", row_number, id);
 		return 1;
-	}		
+	}
 
 	for (int student_index = 0; student_index < StudentDB->size; student_index++) {
 		if (StudentDB->StudentRecord[student_index].id == id_value) {
@@ -103,13 +103,13 @@ int validate_id(char* id, int row_number, struct Database* StudentDB) {
 
 void validate_name(char* name, int row_number) {
 
-	char* name_copy = strdup(name);
+	char* name_copy = _strdup(name);
 
 	char* read_ptr = name;
 	char* write_ptr = name;
 	int capitalise_next = 1;	// start at 1 cuz first letter is capitalised
 
-	while (*read_ptr != '\0') {		
+	while (*read_ptr != '\0') {
 		if (isalpha(*read_ptr) ||	// all characters typically allowed in a name
 			*read_ptr == '\'' ||
 			*read_ptr == '/' ||
@@ -129,13 +129,13 @@ void validate_name(char* name, int row_number) {
 					*write_ptr++ = tolower(*read_ptr);
 				}
 			}
-			else if (*read_ptr == ' ' && *(read_ptr+1) == ' ') {	// throws away space if next char is also space
+			else if (*read_ptr == ' ' && *(read_ptr + 1) == ' ') {	// throws away space if next char is also space
 				// do nothing
 			}
 			else {
 				*write_ptr++ = *read_ptr;
 			}
-			
+
 		}
 
 		read_ptr++;
@@ -191,12 +191,12 @@ float validate_mark(char* mark, int row_number) {
 // for use in INSERT, UPDATE, DELETE (these change datapoints)
 void recalc_col_widths(struct Database* StudentDB, struct Student* recordAdded, struct Student* recordToDelete) {
 	// if recordAdded is not NULL, we
-	
+
 	if (StudentDB == NULL || StudentDB->columns == NULL) {
 		return;	//no change
 	}
 
-	
+
 }
 
 int parse_headers(char* header_line, struct Database* StudentDB) {
@@ -209,7 +209,7 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 	char* context = NULL;
 	char* header;
 	// printf("header copy: %s\n", header_line_copy);
-	
+
 	int column_max = 4;		// initial max columns for malloc, increase if needed
 	//StudentDB->column_count = column_max;		// store for ease of looping
 	// StudentDB->columns = malloc(sizeof(struct ColumnMap) * column_max); 
@@ -218,7 +218,7 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 
 	if (StudentDB->columns == NULL) {
 		printf("Memory allocation for StudentDB->columns failed.\n");
-		return 1;	
+		return 1;
 	}
 
 	// zktodo: add code for realloc if exceeds column_max
@@ -226,7 +226,7 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 	// iterate thru headers on the header_line (tab delimiter)
 	for (header = strtok_s(header_line_copy, "\t", &context);
 		header != NULL;
-		header = strtok_s(NULL, "\t", &context)) 
+		header = strtok_s(NULL, "\t", &context))
 	{
 		if (column_count >= column_max) {
 			column_max *= 2;
@@ -261,14 +261,14 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 		/*printf("DEBUG: Column %d: header='%s' -> mapped to %d\n",
 			column_count, header, StudentDB->columns[column_count].column_id);*/
 
-		//printf("Mapped column %d: %s to id %d\n", column_count, StudentDB->columns[column_count].header_name, StudentDB->columns[column_count].column_id);
-		
-		/*switch (StudentDB->columns[column_count].column_id) {
-		case COL_ID: printf("ID\n"); break;
-		case COL_NAME: printf("Name\n"); break;
-		case COL_PROGRAMME: printf("Programme\n"); break;
-		case COL_MARK: printf("Mark\n"); break;
-		}*/
+			//printf("Mapped column %d: %s to id %d\n", column_count, StudentDB->columns[column_count].header_name, StudentDB->columns[column_count].column_id);
+
+			/*switch (StudentDB->columns[column_count].column_id) {
+			case COL_ID: printf("ID\n"); break;
+			case COL_NAME: printf("Name\n"); break;
+			case COL_PROGRAMME: printf("Programme\n"); break;
+			case COL_MARK: printf("Mark\n"); break;
+			}*/
 
 		column_count++;
 	}
@@ -335,24 +335,24 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 
 		// fill in current_student data based on header mapping found
 		switch (column_id) {
-			case COL_ID:	// no validation cuz alr done
-				sscanf_s(datapoint, "%d", &current_student->id);
-				break;
-			case COL_NAME:
-				validate_name(datapoint, row_number);	// proper capitalisation, removes duped spaces
-				strcpy_s(current_student->name, strlen(datapoint) + 1, datapoint);
-				break;
-			case COL_PROGRAMME:
-				validate_name(datapoint, row_number);	// proper capitalisation, remove duped spaces as well (zktodo: change name)
-				validate_programme(datapoint, row_number);
-				strcpy_s(current_student->programme, strlen(datapoint) + 1, datapoint);
-				break;
-			case COL_MARK:
-				current_student->mark = validate_mark(datapoint, row_number);
-				break;
-			case COL_OTHER:	// no validation
-				break;
-			}
+		case COL_ID:	// no validation cuz alr done
+			sscanf_s(datapoint, "%d", &current_student->id);
+			break;
+		case COL_NAME:
+			validate_name(datapoint, row_number);	// proper capitalisation, removes duped spaces
+			strcpy_s(current_student->name, strlen(datapoint) + 1, datapoint);
+			break;
+		case COL_PROGRAMME:
+			validate_name(datapoint, row_number);	// proper capitalisation, remove duped spaces as well (zktodo: change name)
+			validate_programme(datapoint, row_number);
+			strcpy_s(current_student->programme, strlen(datapoint) + 1, datapoint);
+			break;
+		case COL_MARK:
+			current_student->mark = validate_mark(datapoint, row_number);
+			break;
+		case COL_OTHER:	// no validation
+			break;
+		}
 		// measure if saved max_width is surpassed, and edit if it is
 		if (StudentDB->columns[column_index].max_width < strlen(datapoint)) {
 			StudentDB->columns[column_index].max_width = strlen(datapoint);
@@ -366,11 +366,11 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 }
 
 
-struct Database* load_data(FILE *file) {
+struct Database* load_data(FILE* file) {
 
 	//struct Database* StudentDB = malloc(sizeof(struct Database));	
 	struct Database* StudentDB = calloc(1, sizeof(struct Database));	// use calloc in case any fields are read before assigning
-	
+
 	//i doubt the allocated  memory needs to change cuz the records part is a ptr
 	if (StudentDB == NULL) {
 		printf("Memory allocation for StudentDB failed\n");
@@ -426,7 +426,13 @@ struct Database* load_data(FILE *file) {
 		if (line_counter <= 5) {
 			continue;
 		}
-		
+
+		// Skip empty lines (prevents extra blank records)
+		clean_input(line_buffer);
+		if (strlen(line_buffer) == 0) {
+			continue;
+		}
+
 		// reallocate memory for StudentRecord if capacity gets exceeded
 		if (student_index >= capacity) {
 			capacity *= 2;	// increase limit if exceeded, times 2 seems to be standard method
@@ -451,11 +457,11 @@ struct Database* load_data(FILE *file) {
 		}
 		else {
 			printf("Successfully read student %d: ID=%d, Name=%s, Programme=%s, Mark=%.1f\n",
-			student_index,
-			StudentDB->StudentRecord[student_index].id,
-			StudentDB->StudentRecord[student_index].name,
-			StudentDB->StudentRecord[student_index].programme,
-			StudentDB->StudentRecord[student_index].mark);
+				student_index,
+				StudentDB->StudentRecord[student_index].id,
+				StudentDB->StudentRecord[student_index].name,
+				StudentDB->StudentRecord[student_index].programme,
+				StudentDB->StudentRecord[student_index].mark);
 		}
 
 		student_index++;
@@ -499,7 +505,7 @@ struct ColumnMap* cpyColumnMap(const struct ColumnMap* src, int count) {
 
 // Duplicate Database details (excluding StudentRecord)
 struct Database* cpyDatabaseDetails(const struct Database* src, struct Database* dest) {
-		if (src == NULL || dest == NULL) {
+	if (src == NULL || dest == NULL) {
 		return NULL;
 	}
 	strcpy_s(dest->databaseName, sizeof(dest->databaseName), src->databaseName);
@@ -510,4 +516,110 @@ struct Database* cpyDatabaseDetails(const struct Database* src, struct Database*
 	dest->column_count = src->column_count;
 	dest->columns = cpyColumnMap(src->columns, src->column_count);
 	return dest;
+}
+
+// INSERT and QUERY FUNCTIONS
+// Kim basic insert of student ids,name,programms and the marks into the system
+// Users are able to query the studetn via either IDs,names or programms
+
+// Function to add a new student to the database
+bool add_student(struct Student newStudent) {
+	struct Database* db = get_database();
+	if (db == NULL) {
+		printf("CMS: Please OPEN a database first.\n");
+		return false;
+	}
+
+	// Expand array if capacity reached
+	if (db->size >= db->capacity) {
+		int newCapacity = db->capacity * 2;
+		struct Student* resized = realloc(db->StudentRecord, newCapacity * sizeof(struct Student));
+		if (resized == NULL) {
+			printf("Memory reallocation failed while inserting new student.\n");
+			return false;
+		}
+		db->StudentRecord = resized;
+		db->capacity = newCapacity;
+	}
+
+	db->StudentRecord[db->size] = newStudent;
+	db->size++;
+
+	printf("CMS: Successfully added new student (ID=%d, Name=%s, Programme=%s, Mark=%.1f)\n",
+		newStudent.id, newStudent.name, newStudent.programme, newStudent.mark);
+	return true;
+}
+
+// Function to search for a student by ID, name, or programme
+void query_student(const char* keyword) {
+	struct Database* db = get_database();
+	if (db == NULL) {
+		printf("CMS: Please OPEN the database first.\n");
+		return;
+	}
+
+	char lowered[100];
+	strcpy_s(lowered, sizeof(lowered), keyword);
+	for (int i = 0; lowered[i]; i++) lowered[i] = tolower(lowered[i]);
+
+	bool found = false;
+
+	for (int i = 0; i < db->size; i++) {
+		char name[100], programme[100];
+		strcpy_s(name, sizeof(name), db->StudentRecord[i].name);
+		strcpy_s(programme, sizeof(programme), db->StudentRecord[i].programme);
+		for (int j = 0; name[j]; j++) name[j] = tolower(name[j]);
+		for (int j = 0; programme[j]; j++) programme[j] = tolower(programme[j]);
+
+		char id_str[20];
+		sprintf_s(id_str, sizeof(id_str), "%d", db->StudentRecord[i].id);
+
+		if (strstr(name, lowered) || strstr(programme, lowered) || strstr(id_str, lowered)) {
+			printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
+				db->StudentRecord[i].id,
+				db->StudentRecord[i].name,
+				db->StudentRecord[i].programme,
+				db->StudentRecord[i].mark);
+			found = true;
+		}
+	}
+
+	if (!found) {
+		printf("CMS: No records found for \"%s\".\n", keyword);
+	}
+}
+
+bool save_database(struct Database* db, const char* filepath) {
+	FILE* file = NULL;
+	fopen_s(&file, filepath, "w");
+	if (file == NULL) {
+		printf("Unable to open file for saving: %s\n", filepath);
+		return false;
+	}
+
+	fprintf(file, "Database Name: %s\n", db->databaseName);
+	fprintf(file, "Authors: %s\n\n", db->authors);
+	fprintf(file, "Table Name: %s\n", db->tableName);
+
+	// Headers
+	for (int c = 0; c < db->column_count; c++) {
+		fprintf(file, "%s", db->columns[c].header_name);
+		if (c < db->column_count - 1)
+			fprintf(file, "\t");
+	}
+	fprintf(file, "\n");
+
+	// Records
+	for (int i = 0; i < db->size; i++) {
+		fprintf(file, "%d\t%s\t%s\t%.1f\n",
+			db->StudentRecord[i].id,
+			db->StudentRecord[i].name ? db->StudentRecord[i].name : "N/A",
+			db->StudentRecord[i].programme ? db->StudentRecord[i].programme : "N/A",
+			db->StudentRecord[i].mark);
+
+	}
+
+	fclose(file);
+	printf("CMS: Database saved successfully to %s\n", filepath);
+	return true;
 }
