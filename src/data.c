@@ -511,3 +511,110 @@ struct Database* cpyDatabaseDetails(const struct Database* src, struct Database*
 	dest->columns = cpyColumnMap(src->columns, src->column_count);
 	return dest;
 }
+
+
+// INSERT and QUERY FUNCTIONS
+// Kim basic insert of student ids,name,programms and the marks into the system
+// Users are able to query the studetn via either IDs,names or programms
+
+// Function to add a new student to the database
+bool add_student(struct Student newStudent) {
+	struct Database* db = get_database();
+	if (db == NULL) {
+		printf("CMS: Please OPEN a database first.\n");
+		return false;
+	}
+
+	// Expand array if capacity reached
+	if (db->size >= db->capacity) {
+		int newCapacity = db->capacity * 2;
+		struct Student* resized = realloc(db->StudentRecord, newCapacity * sizeof(struct Student));
+		if (resized == NULL) {
+			printf("Memory reallocation failed while inserting new student.\n");
+			return false;
+		}
+		db->StudentRecord = resized;
+		db->capacity = newCapacity;
+	}
+
+	db->StudentRecord[db->size] = newStudent;
+	db->size++;
+
+	printf("CMS: Successfully added new student (ID=%d, Name=%s, Programme=%s, Mark=%.1f)\n",
+		newStudent.id, newStudent.name, newStudent.programme, newStudent.mark);
+	return true;
+}
+
+// Function to search for a student by ID, name, or programme
+void query_student(const char* keyword) {
+	struct Database* db = get_database();
+	if (db == NULL) {
+		printf("CMS: Please OPEN the database first.\n");
+		return;
+	}
+
+	char lowered[100];
+	strcpy_s(lowered, sizeof(lowered), keyword);
+	for (int i = 0; lowered[i]; i++) lowered[i] = tolower(lowered[i]);
+
+	bool found = false;
+
+	for (int i = 0; i < db->size; i++) {
+		char name[100], programme[100];
+		strcpy_s(name, sizeof(name), db->StudentRecord[i].name);
+		strcpy_s(programme, sizeof(programme), db->StudentRecord[i].programme);
+		for (int j = 0; name[j]; j++) name[j] = tolower(name[j]);
+		for (int j = 0; programme[j]; j++) programme[j] = tolower(programme[j]);
+
+		char id_str[20];
+		sprintf_s(id_str, sizeof(id_str), "%d", db->StudentRecord[i].id);
+
+		if (strstr(name, lowered) || strstr(programme, lowered) || strstr(id_str, lowered)) {
+			printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
+				db->StudentRecord[i].id,
+				db->StudentRecord[i].name,
+				db->StudentRecord[i].programme,
+				db->StudentRecord[i].mark);
+			found = true;
+		}
+	}
+
+	if (!found) {
+		printf("CMS: No records found for \"%s\".\n", keyword);
+	}
+}
+
+bool save_database(struct Database* db, const char* filepath) {
+	FILE* file = NULL;
+	fopen_s(&file, filepath, "w");
+	if (file == NULL) {
+		printf("Unable to open file for saving: %s\n", filepath);
+		return false;
+	}
+
+	fprintf(file, "Database Name: %s\n", db->databaseName);
+	fprintf(file, "Authors: %s\n\n", db->authors);
+	fprintf(file, "Table Name: %s\n", db->tableName);
+
+	// Headers
+	for (int c = 0; c < db->column_count; c++) {
+		fprintf(file, "%s", db->columns[c].header_name);
+		if (c < db->column_count - 1)
+			fprintf(file, "\t");
+	}
+	fprintf(file, "\n");
+
+	// Records
+	for (int i = 0; i < db->size; i++) {
+		fprintf(file, "%d\t%s\t%s\t%.1f\n",
+			db->StudentRecord[i].id,
+			db->StudentRecord[i].name ? db->StudentRecord[i].name : "N/A",
+			db->StudentRecord[i].programme ? db->StudentRecord[i].programme : "N/A",
+			db->StudentRecord[i].mark);
+
+	}
+
+	fclose(file);
+	printf("CMS: Database saved successfully to %s\n", filepath);
+	return true;
+}
