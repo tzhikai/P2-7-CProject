@@ -311,9 +311,9 @@ bool delete_fn(char* context) {
 				}
 				
 				for (int i = 0; i < StudentDB->size; i++) {
-					printf("\nChecking Index %d\n", i); //Debug
+					//printf("\nChecking Index %d\n", i); //Debug
 					if (i == indexdelete) {
-						printf("\nSkipping Index %d\n", i); //Debug
+						//printf("\nSkipping Index %d\n", i); //Debug
 						continue;
 					}
 					NEWrecord[newindex] = record[i];
@@ -336,6 +336,9 @@ bool delete_fn(char* context) {
 				free(record);
 				free(StudentDB->columns);
 				free(StudentDB);
+
+				struct Database* db = get_database();
+				update_width(db, indexdelete, WIDTH_DELETE);
 
 				printf("\nThe record with ID=%d is successfully deleted\n", iddelete);
 				cnfmdeleting = 0;
@@ -697,6 +700,8 @@ bool update_fn(char* context) {
 		}
 	}
 
+	update_width(db, idx, WIDTH_UPDATE);
+
 	printf("\nCMS: Record with ID=%d successfully updated.\n", id);
 	return true;
 }
@@ -818,6 +823,8 @@ bool insert_fn(char* context) {
 	}
 
 	add_student(newStudent);
+	update_width(db, db->size - 1, WIDTH_INSERT);
+
 	printf("CMS: New student inserted successfully.\n");
 
 	return true;
@@ -890,6 +897,74 @@ bool save_fn(char* context) {
 	return true;
 }
 
+// width calculation
+// put types into an enum
+//typedef enum { INSERT, UPDATE, DELETE } WidthAction;
+
+// Get string length of a student field based on column
+int get_student_field_len(struct Student* s, struct ColumnMap* col) {
+	char buf[32];
+	switch (col->column_id) {
+	case COL_ID:
+		sprintf_s(buf, sizeof(buf), "%d", s->id);
+		return (int)strlen(buf);
+	case COL_NAME:
+		return (int)strlen(s->name);
+	case COL_PROGRAMME:
+		return (int)strlen(s->programme);
+	case COL_MARK:
+		sprintf_s(buf, sizeof(buf), "%.1f", s->mark);
+		return (int)strlen(buf);
+	default:
+		return 0;
+	}
+}
+
+// Recalculate max width for a specific column
+int recalc_column_max(struct Database* db, struct ColumnMap* col) {
+	int max_len = (int)strlen(col->header_name); // start with header length
+	for (int r = 0; r < db->size; r++) {
+		int len = get_student_field_len(&db->StudentRecord[r], col);
+		if (len > max_len) max_len = len;
+	}
+	return max_len;
+}
+
+// Main update_width function
+void update_width(struct Database* db, int row_idx, WidthAction action) {
+	if (!db || !db->StudentRecord || row_idx < 0) return;
+
+	for (int i = 0; i < db->column_count; i++) {
+		struct ColumnMap* col = &db->columns[i];
+		int old_width = col->max_width;
+		int row_len = 0;
+
+		// Only compute row_len for INSERT or UPDATE (existing row)
+		if (action != WIDTH_DELETE && row_idx < db->size) {
+			row_len = get_student_field_len(&db->StudentRecord[row_idx], col);
+		}
+		printf("[DEBUG] Column %d (%s): old_width=%d, row_len=%d\n",
+			i, col->header_name, old_width, row_len);
+		if (action == WIDTH_INSERT) {
+			if (row_len > col->max_width)
+				col->max_width = row_len;
+			printf("[DEBUG] New width after INSERT: %d\n", col->max_width);
+		}
+		else if (action == WIDTH_UPDATE) {
+			if (row_len > col->max_width) {
+				col->max_width = row_len;
+			}
+			else if (old_width == col->max_width) {
+				col->max_width = recalc_column_max(db, col);
+			}
+			printf("[DEBUG] New width after UPDATE: %d\n", col->max_width);
+		}
+		else if (action == WIDTH_DELETE) {
+			col->max_width = recalc_column_max(db, col);
+			printf("[DEBUG] New width after DELETE: %d\n", col->max_width);
+		}
+	}
+}
 
 
 // array of available commands (all new ones go in here)

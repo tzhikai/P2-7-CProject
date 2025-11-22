@@ -70,7 +70,11 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 
 	if (extrainput != NULL && extrainput[0] != '\0') {
 		char input_copy[100];
-		strcpy_s(input_copy, sizeof(input_copy), extrainput);
+		
+		errno_t result = strcpy_s(input_copy, sizeof(input_copy), extrainput);
+
+
+
 		printf("context first: %s\n", input_copy);
 		// correct would be UPDATE ID=<value>, this could mean UPDATE 2500123
 		if (strchr(input_copy, '=') == NULL) {
