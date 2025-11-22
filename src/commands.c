@@ -513,49 +513,55 @@ bool undo_fn(char* context){
 	return true;
 }
 
-// HY 
+// HY show summary
 void print_summary(struct Database* db) {
+	// Validate database
 	if (db == NULL || db->size == 0) {
 		printf("CMS: No records found.\n");
 		return;
 	}
-
-	float highest = -FLT_MAX;
-	float lowest = FLT_MAX;
+	// Initialize tracking variables
+	float highest = -1;
+	float lowest = 101;
 	float total = 0;
-	int highestIndex = 0;
-	int lowestIndex = 0;
+	int highestIndex = -1;
+	int lowestIndex = -1;
 	int validCount = 0;
 
+	// Iterate through all student records
 	for (int i = 0; i < db->size; i++) {
 		float m = db->StudentRecord[i].mark;
-		// when mark is negative
+		// when mark is negative (skipped)
 		if (m < 0) {
 			continue;
 		}
+
 		total += m;
 		validCount++;
 
+		// Check highest mark
 		if (m > highest) {
 			highest = m;
 			highestIndex = i;
 		}
+		// Check lowest mark
 		if (m < lowest) {
 			lowest = m;
 			lowestIndex = i;
 		}
 	}
-	// Exception handling for negative marks
+	// Exception handling for no valid marks in database
 	if (validCount == 0) {
 		printf("CMS: Summary Statistics\n");
 		printf("No valid marks to summarize (all marks are negative).\n");
 		return;
 	}
-
-	float average = total / db->size;
+	// Gets average of non invalid marks
+	float average = total / validCount;
 
 	printf("CMS: Summary Statistics\n");
 	printf("Total number of students: %d\n", db->size);
+	// Only displays valid-mark count if some marks were invalid
 	if (db->size != validCount) {
 		printf("Total number of students with valid marks: %d\n", validCount);
 	}
@@ -568,6 +574,7 @@ void print_summary(struct Database* db) {
 		lowest, db->StudentRecord[lowestIndex].name);
 }
 
+// Call summary function
 bool summary_fn(char* context) {
 	struct Database* db = get_database();
 	print_summary(db);
@@ -576,12 +583,14 @@ bool summary_fn(char* context) {
 
 //hy update
 bool update_fn(char* context) {
+	// Load database and validate
 	struct Database* db = get_database();
 	if (db == NULL || db->StudentRecord == NULL) {
 		printf("CMS: No database loaded. Please OPEN one first.\n");
 		return false;
 	}
 	//printf("context here: %s\n", context);
+	// Extract ID and header/value pairs
 	int id = 0;
 	int* id_ptr = &id;	// for passing by reference to extract_extrainput_id
 
@@ -593,6 +602,7 @@ bool update_fn(char* context) {
 		hvpair_count = extract_extrainput_id(id_ptr, context, db, hvp_array, false);
 	}
 
+	// Prompt user if ID not found
 	if (id == 0) {
 		// ask for ID
 		char id_buffer[20];
@@ -610,7 +620,7 @@ bool update_fn(char* context) {
 		id = atoi(id_buffer);
 	}
 
-	// Use your existing id_search()
+	// Search for student with the given ID
 	int idx = id_search(id);
 	if (idx == -1) {
 		printf("CMS: The record with ID=%d does not exist.\n", id);
@@ -622,6 +632,8 @@ bool update_fn(char* context) {
 	printf("\nCMS: Record found.\n");
 	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
 		s->id, s->name, s->programme, s->mark);
+
+	// If extrainput header-value pairs exist, apply them
 
 	if (hvpair_count > 0) {
 		//struct HeaderValuePair* hvarray = get_hvarray();
@@ -636,7 +648,8 @@ bool update_fn(char* context) {
 
 			switch (hvp_array[i].column_id) {
 				case COL_ID:
-					s->id = atoi(hvp_array[i].datapoint);
+					printf("ID cannot be modified.\n");
+					// s->id = atoi(hvp_array[i].datapoint);
 					break;
 				case COL_NAME:
 					strcpy_s(s->name, sizeof(s->name), hvp_array[i].datapoint);
@@ -651,6 +664,7 @@ bool update_fn(char* context) {
 		}
 
 	}
+	// If no extrainput go to interactive update mode
 	else {
 		printf("No extrainput given or invalid\n");
 		printf("\n=== Enter New Data (Press Enter to skip) ===\n\n");
@@ -659,22 +673,24 @@ bool update_fn(char* context) {
 
 		for (int i = 0; i < db->column_count; i++) {
 
-			// --- Skip ID entirely ---
+			// Skip ID entirely
 			if (db->columns[i].column_id == COL_ID) {
 				printf("ID cannot be modified.\n");
 				continue;
 			}
 
-			// --- Prompt user ONLY for modifiable fields ---
+			// Prompt user ONLY for modifiable fields
 			printf("Enter new %s (Enter = skip): ", db->columns[i].header_name);
 
 			if (!fgets(buf, sizeof(buf), stdin))
 				continue;
 
+			// Remove newline
 			size_t len = strlen(buf);
 			if (len > 0 && buf[len - 1] == '\n')
 				buf[len - 1] = '\0';
 
+			// Skip if empty
 			if (strlen(buf) == 0)
 				continue;
 
@@ -702,9 +718,10 @@ bool update_fn(char* context) {
 			}
 		}
 	}
-
+	// Update column width for table formatting
 	update_width(db, idx, WIDTH_UPDATE);
 
+	// Update message for debugging
 	printf("\nCMS: Record with ID=%d successfully updated.\n", id);
 	return true;
 }
