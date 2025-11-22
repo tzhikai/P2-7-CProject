@@ -65,19 +65,20 @@ int id_search(int id) {
 int validate_id(char* id, int row_number, struct Database* StudentDB) {
 	int year = 25;	// zktodo: put this in struct? or make this auto calc from curr year?
 	int id_value = atoi(id);
+	int id_length = strlen(id);
 
-	for (int i = 0; i < strlen(id); i++) {
+	for (int i = 0; i < id_length; i++) {
 		if (!isdigit(id[i])) {
 			printf("Row %d, ID %s contains invalid character '%c'. Skipping row.\n", row_number, id, id[i]);
 			return 1;
 		}
 	}
 
-	if (strlen(id) != 7) {		// must be 7 digits
-		printf("Row %d, ID %s has length of %d, must be 7. Skipping row.\n", row_number, id, (int)strlen(id));
+	if (id_length != 7) {		// must be 7 digits
+		printf("Row %d, ID %s has length of %d, must be 7. Skipping row.\n", row_number, id, (int)id_length);
 		return 1;
 	}	
-	if (id_value < 0 ||							// eg 2600000 onwards not allowed
+	if (id_value < 0 ||			// eg 2600000 onwards not allowed
 		id_value >= ((year + 1) * 100000)) {		
 		printf("Row %d, ID %s is outside of valid ID range. Skipping row.\n", row_number, id);
 		return 1;
