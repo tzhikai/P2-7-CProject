@@ -567,18 +567,16 @@ bool update_fn(char* context) {
 		printf("CMS: No database loaded. Please OPEN one first.\n");
 		return false;
 	}
-
+	//printf("context here: %s\n", context);
 	int id = 0;
 	int* id_ptr = &id;	// for passing by reference to extract_extrainput_id
 
-	char* remaining = extract_extrainput_values(id_ptr, context, db);
+	/*char* test_str = get_str();
+	printf_s("test: %s", test_str);*/
+	struct HeaderValuePair hvp_array[10];
+	memset(hvp_array, 0, sizeof(hvp_array));
+	int hvpair_count = extract_extrainput_id(id_ptr, context, db, hvp_array);
 	
-	/*if (remaining != NULL) {
-		printf("Remaining: %s\n", remaining);	
-	}
-	else {
-		printf("No extra input values detected.\n");
-	}*/
 
 	if (id == 0) {
 		// ask for ID
@@ -603,38 +601,36 @@ bool update_fn(char* context) {
 	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
 		s->id, s->name, s->programme, s->mark);
 
-	int hvp_count = 0;
-	struct HeaderValuePair* hvp_array = NULL;
-	if (remaining != NULL) {
-		// create a list of header-value pairs (like python dictionary!) from the remaining cmd_ptr (if any)
-		const int max_pairs = db->column_count;	// can limit pair amt to number of cols
-		hvp_array = calloc(max_pairs, sizeof(struct HeaderValuePair));	// wont need to realloc since using max possible amt
-		hvp_count = extract_extrainput_values(hvp_array, remaining, db);
+	if (hvpair_count > 0) {
+		struct HeaderValuePair* hvarray = get_hvarray();
 
-	}
+		if (hvarray == NULL) {
+			printf("NULL HVARRAY\n");
+			return false;
+		}
 
-	if (hvp_count > 0) {
-		for (int i = 0; i < hvp_count; i++) {
-			switch (hvp_array[i].column_id) {
+		for (int i = 0; i < hvpair_count; i++) {
+			printf("Header: %d\n Value: %s\n", hvarray[i].column_id, hvarray[i].datapoint);
+
+			switch (hvarray[i].column_id) {
 				case COL_ID:
-					s->id = atoi(hvp_array[i].datapoint);
+					s->id = atoi(hvarray[i].datapoint);
 					break;
 				case COL_NAME:
-					strcpy_s(s->name, sizeof(s->name), hvp_array[i].datapoint);
+					strcpy_s(s->name, sizeof(s->name), hvarray[i].datapoint);
 					break;
 				case COL_PROGRAMME:
-					strcpy_s(s->programme, sizeof(s->programme), hvp_array[i].datapoint);
+					strcpy_s(s->programme, sizeof(s->programme), hvarray[i].datapoint);
 					break;
 				case COL_MARK:
-					s->mark = atof(hvp_array[i].datapoint);
-					break;
-				case COL_OTHER:
+					s->mark = atof(hvarray[i].datapoint);
 					break;
 			}
 		}
-		//free(remaining);
+
 	}
 	else {
+		printf("No extrainput given or invalid\n");
 		printf("\n=== Enter New Data (Press Enter to skip) ===\n\n");
 
 		char buf[100];
@@ -681,7 +677,6 @@ bool update_fn(char* context) {
 			}
 		}
 	}
-	
 
 	printf("\nCMS: Record with ID=%d successfully updated.\n", id);
 	return true;
@@ -834,11 +829,13 @@ bool run_command(char command[]) {
 		}
 		strcat_s(callphrase, sizeof(callphrase), command_ptr);
 		// printf("checking %s\n", callphrase);
+		//printf("checking context in loops %s\n", context);
 
 		for (int i = 0; i < num_of_operations; i++) {
 			if (_stricmp(callphrase, operations[i].name) == 0) {
 				// printf("%s is equal to %s\n", callphrase, operations[i].name);
 				command_found = true;
+				//printf("context in run_command %s\n", context);
 				command_success = operations[i].function(context);
 
 				/*if (!command_success) {

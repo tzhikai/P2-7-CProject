@@ -5,11 +5,12 @@
 #include "utils.h"
 #include "data.h"
 
-// proto hy
-
-
 // cleans up user input command before checking if it can be executed
 void clean_input(char command[]) {
+
+	if (command == NULL || command[0] == '\0') {
+		return;
+	}
 
 	// printf("Before: command: %s, size: %d\n", command, strlen(command));
 
@@ -58,20 +59,24 @@ void join_words(char input[]) {
 }
 
 
-char* extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* StudentDB) {
+int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* StudentDB, struct HeaderValuePair* hvp_array) {
+	if (extrainput == NULL || extrainput[0] == '\0') {
+		printf("Extra input is NULL or empty.\n");
+		return 0;
+	}
+	
 	char* cmd_ptr = NULL;
 	char* context = NULL;
 
 	if (extrainput != NULL && extrainput[0] != '\0') {
-		char input_copy[50];
+		char input_copy[100];
 		strcpy_s(input_copy, sizeof(input_copy), extrainput);
 		printf("context first: %s\n", input_copy);
 		// correct would be UPDATE ID=<value>, this could mean UPDATE 2500123
 		if (strchr(input_copy, '=') == NULL) {
 			printf("Extra input invalid. Use <field>=<value>\n");
-			return NULL;
+			return 0;
 		}
-
 		
 		cmd_ptr = strtok_s(input_copy, "=", &context); // get first header (before =)
 
@@ -80,7 +85,7 @@ char* extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Stud
 		// check if first word/field is ID, since ID is primary key
 		if (map_column(cmd_ptr) != COL_ID) {	// eg UPDATE NAME=John Souls	
 			printf("Extra input invalid. First field must be ID.\n");
-			return NULL;
+			return 0;
 		}
 		else {
 			printf("trial last\n");
@@ -92,10 +97,10 @@ char* extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Stud
 				switch (validate_id(cmd_ptr, -1, StudentDB)) {
 				case 1:
 					printf("Extra input invalid. ID invalid.\n");
-					return NULL;
+					return 0;
 				case 0:
 					printf("Extra input invalid. ID not found.\n");
-					return NULL;
+					return 0;
 				case 2:
 					*id_ptr = atoi(cmd_ptr);
 					printf("ID %s found, now is %d.\n", cmd_ptr, *id_ptr);
@@ -105,39 +110,98 @@ char* extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Stud
 		}
 	}
 	else {
-		return NULL;
-	}
-
-	if (cmd_ptr == NULL) {
-		return NULL;
-	}
-
-	char* remaining = strstr(extrainput, cmd_ptr);
-	if (remaining) {
-		remaining += strlen(cmd_ptr);	// go past id value
-		while (*remaining == ' ') {
-			remaining++;
-		}
-		if (*remaining != '\0') {
-			printf("Remaining context: %s\n", remaining);
-			return _strdup(remaining);
-		}
-	}
-
-	//printf("Returning context: %s\n", context);
-	return NULL;
-}
-
-int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, struct Database* StudentDB) {
-	// input eg Mark=85.5 Name=John Souls Programme=Digital Supply Chain
-	// find = to get Mark, then check for = to see if theres another header, if not then rest is value, if so then remove everything after the last space
-
-	if (extrainput == NULL || extrainput[0] == '\0') {
-		printf("no extra input\n");
+		printf("initial extrainput is NULL\n");
 		return 0;
 	}
 
-	char input_copy[50];
+
+	if (cmd_ptr == NULL) {
+		printf("post loop is NULL\n");
+		return 0;
+	}
+	
+	// handle remaining fields, if any
+
+	char* remaining = strstr(extrainput, cmd_ptr);
+	if (remaining == NULL) {
+		printf("No remaining fields left");
+		return 0;
+	}
+	else {
+		remaining += strlen(cmd_ptr);	// move past id
+	}
+	printf("Remaning string: %s\n", remaining);
+
+	int hvp_count = 0;
+	//struct HeaderValuePair* hvp_array = NULL;
+	/*struct HeaderValuePair hvp_array[10];
+	memset(hvp_array, 0, sizeof(hvp_array));*/
+
+	// create a list of header-value pairs (like python dictionary!) from the remaining cmd_ptr (if any)
+	//const int max_pairs = StudentDB->column_count;	// can limit pair amt to number of cols
+	//const int max_pairs = 10;
+	//hvp_array = calloc(max_pairs, sizeof(struct HeaderValuePair));	// wont need to realloc since using max possible amt
+
+	if (hvp_array == NULL) {
+		printf("Memory allocation for hvp_array failed\n");
+		return 0;
+	}
+	else {
+		printf("it worked\n");
+	}
+	if (hvp_array == (void*)-1) {
+		printf("calloc returned -1 (error)\n");
+	}
+	else if ((uintptr_t)hvp_array > 0xFFFFFFFF00000000) {
+		printf("Pointer is in kernel space - INVALID!\n");
+	}
+	else {
+		printf("all good\n");
+	}
+
+	hvp_count = extract_extrainput_values(hvp_array, remaining, StudentDB);
+	printf("hvp_count = %d\n", hvp_count);
+	return hvp_count;
+	
+
+	/*if (hvp_count > 0) {
+		for (int i = 0; i < hvp_count; i++) {
+			switch (hvp_array[i].column_id) {
+			case COL_ID:
+				s->id = atoi(hvp_array[i].datapoint);
+				break;
+			case COL_NAME:
+				strcpy_s(s->name, sizeof(s->name), hvp_array[i].datapoint);
+				break;
+			case COL_PROGRAMME:
+				strcpy_s(s->programme, sizeof(s->programme), hvp_array[i].datapoint);
+				break;
+			case COL_MARK:
+				s->mark = atof(hvp_array[i].datapoint);
+				break;
+			case COL_OTHER:
+				break;
+			}
+		}*/
+		//free(remaining);
+	//}
+
+}
+
+int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, struct Database* StudentDB) {
+	// input eg ID=2500321 Mark=85.5 Name=John Souls Programme=Digital Supply Chain
+	// find = to get Mark, then check for = to see if theres another header, if not then rest is value, if so then remove everything after the last space
+
+	if (extrainput == NULL) {
+		printf("no extra input\n");
+		return 0;
+	}
+	else {
+		clean_input(extrainput);
+		printf("values input: %s\n", extrainput);
+	}
+
+	char input_copy[100];
 	strcpy_s(input_copy, sizeof(input_copy), extrainput);
 
 	int pair_count = 0;
@@ -190,7 +254,6 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 				}
 			}
 
-
 			*equal_ptr = '\0';	// splits string into 2 parts, header and value
 			strcpy_s(header, sizeof(header), extra_ptr); // header is before the =
 			char* value_ptr = equal_ptr + 1; // value is after the =
@@ -213,6 +276,11 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 	if (value_flag) {
 		clean_input(value);
 		Columns col_id = map_column(header);
+		//printf("col_id debug: %d\n", col_id);
+
+		if (hvpair == NULL) {
+			printf("hvpair is NULL\n");
+		}
 
 		if (col_id != COL_OTHER) {	// if excpected header
 			hvpair[pair_count].column_id = col_id;
@@ -222,7 +290,14 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 		}
 	}
 
+	for (int i = 0; i < pair_count; i++) {
+		printf("Header: %d\n Value: %s\n", hvpair[i].column_id, hvpair[i].datapoint);
+	}
+
+	set_hvarray(hvpair);
+
 	return pair_count;
 
 	
 }
+

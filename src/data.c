@@ -147,6 +147,7 @@ void validate_name(char* name, int row_number) {
 		strcpy_s(name, sizeof(name), "N/A");
 		printf("Row %d, %s contains no valid characters.\n", row_number, name_copy);
 	}
+	free(name_copy);
 }
 
 void validate_programme(char* programme, int row_number) {
@@ -202,7 +203,8 @@ void recalc_col_widths(struct Database* StudentDB, struct Student* recordAdded, 
 int parse_headers(char* header_line, struct Database* StudentDB) {
 	clean_input(header_line);
 	char header_line_copy[50];
-	strcpy_s(header_line_copy, strlen(header_line) + 1, header_line);
+	//strcpy_s(header_line_copy, strlen(header_line) + 1, header_line);
+	strcpy_s(header_line_copy, sizeof(header_line_copy), header_line);
 
 	int id_found = 0;
 	int column_count = 0;
@@ -300,7 +302,7 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 	int column_index = 0;
 
 	// loop thru to test id validity
-	char dataline_copy[255];
+	char dataline_copy[255];	//zktodo: dynamic alloc based on input line length
 	strcpy_s(dataline_copy, sizeof(dataline_copy), data_line);
 	for (datapoint = strtok_s(dataline_copy, "\t", &context);
 		datapoint != NULL;
@@ -321,7 +323,7 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 	column_index = 0;
 	//datapoint = NULL;
 	context = NULL;
-	float temp;
+	//float temp;
 	for (datapoint = strtok_s(data_line, "\t", &context);
 		datapoint != NULL;
 		datapoint = strtok_s(NULL, "\t", &context))
@@ -340,12 +342,14 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 				break;
 			case COL_NAME:
 				validate_name(datapoint, row_number);	// proper capitalisation, removes duped spaces
-				strcpy_s(current_student->name, strlen(datapoint) + 1, datapoint);
+				//strcpy_s(current_student->name, strlen(datapoint) + 1, datapoint);
+				strcpy_s(current_student->name, sizeof(current_student->name), datapoint);
 				break;
 			case COL_PROGRAMME:
 				validate_name(datapoint, row_number);	// proper capitalisation, remove duped spaces as well (zktodo: change name)
 				validate_programme(datapoint, row_number);
-				strcpy_s(current_student->programme, strlen(datapoint) + 1, datapoint);
+				//strcpy_s(current_student->programme, strlen(datapoint) + 1, datapoint);
+				strcpy_s(current_student->programme, sizeof(current_student->programme), datapoint);
 				break;
 			case COL_MARK:
 				current_student->mark = validate_mark(datapoint, row_number);

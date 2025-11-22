@@ -14,4 +14,5 @@ struct HeaderValuePair {
 	char datapoint[50];
 };
 
+
 #endif // !INPUT_H
