@@ -526,7 +526,6 @@ void print_summary(struct Database* db) {
 
 	for (int i = 0; i < db->size; i++) {
 		float m = db->StudentRecord[i].mark;
-
 		// when mark is negative
 		if (m < 0) {
 			continue;
@@ -543,7 +542,6 @@ void print_summary(struct Database* db) {
 			lowestIndex = i;
 		}
 	}
-
 	// Exception handling for negative marks
 	if (validCount == 0) {
 		printf("CMS: Summary Statistics\n");
@@ -555,6 +553,9 @@ void print_summary(struct Database* db) {
 
 	printf("CMS: Summary Statistics\n");
 	printf("Total number of students: %d\n", db->size);
+	if (db->size != validCount) {
+		printf("Total number of students with valid marks: %d\n", validCount);
+	}
 	printf("Average mark: %.2f\n", average);
 
 	printf("Highest mark: %.2f (%s)\n",
@@ -587,7 +588,7 @@ bool update_fn(char* context) {
 	}
 	while (getchar() != '\n'); // remove leftover newline
 
-	// Use existing id_search()
+	// Use your existing id_search()
 	int idx = id_search(id);
 	if (idx == -1) {
 		printf("CMS: The record with ID=%d does not exist.\n", id);
@@ -606,14 +607,12 @@ bool update_fn(char* context) {
 
 	for (int i = 0; i < db->column_count; i++) {
 		printf("Enter new %s (Enter = skip): ", db->columns[i].header_name);
-		// read input
-		if (!fgets(buf, sizeof(buf), stdin)) continue;
-		size_t len = strlen(buf);
-		// remove newline
-		if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0';
 
-		// skip if empty
-		if (strlen(buf) == 0) continue;
+		if (!fgets(buf, sizeof(buf), stdin)) continue; // read input
+		size_t len = strlen(buf);
+		if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0'; // remove newline
+
+		if (strlen(buf) == 0) continue; // skip if empty
 
 		switch (db->columns[i].column_id) {
 		case COL_ID:
@@ -642,11 +641,12 @@ bool update_fn(char* context) {
 			break;
 		}
 
-		default:
-			printf("[Unknown column — skipped]\n");
-			break;
+			default:
+				printf("[Unknown column — skipped]\n");
+				break;
+			}
 		}
-	}
+
 
 	printf("\nCMS: Record with ID=%d successfully updated.\n", id);
 	return true;
@@ -732,7 +732,7 @@ bool insert_fn(char* context) {
 	struct Student newStudent = { 0 };
 	char buf[100];
 
-	printf("\n=== Insert New Student ===\n\n");
+	printf("\nInsert New Student\n\n");
 
 	for (int i = 0; i < db->column_count; i++) {
 		int col = db->columns[i].column_id;
@@ -742,37 +742,34 @@ bool insert_fn(char* context) {
 
 			if (!fgets(buf, sizeof(buf), stdin))
 				continue;
-
 			size_t len = strlen(buf);
-			if (len > 0 && buf[len - 1] == '\n')
-				buf[len - 1] = '\0';
 
+			if (len > 0 && buf[len - 1] == '\n') {
+				buf[len - 1] = '\0';
+			}
 			if (strlen(buf) == 0) {
 				printf("This field cannot be empty.\n");
 				continue;
 			}
 
-			// Validation & assignment
+			// ---- Validation & Assignment ----
 			switch (col) {
 			case COL_ID: {
-				int id;
-				if (sscanf_s(buf, "%d", &id) != 1) {
-					printf("Invalid ID. Must be numeric.\n");
-					continue;
+				switch (validate_id(buf, -1, db)) {
+					case 1: //invalid id
+						continue;
+					case 2: //invalid but duplicate id
+						continue;
+					case 0: //valid, new id
+						newStudent.id = atoi(buf);
+						break;
 				}
-				if (id_search(id) != -1) {
-					printf("Duplicate ID found. Please enter a unique ID.\n");
-					continue;
-				}
-				newStudent.id = id;
 				break;
 			}
-
 			case COL_NAME:
 				validate_name(buf, -1);
 				strcpy_s(newStudent.name, sizeof(newStudent.name), buf);
 				break;
-
 			case COL_PROGRAMME:
 				validate_name(buf, -1);
 				validate_programme(buf, -1);
@@ -790,29 +787,20 @@ bool insert_fn(char* context) {
 			}
 
 			default:
-				printf("[Unknown column - skipping]\n");
+				printf("[Unknown column – skipping]\n");
 				break;
 			}
 
-			// Valid input -> break loop
+			// valid input ? break loop
 			break;
 		}
 	}
 
-	// Insert into DB and increment size
-	add_student(newStudent); // ensure this updates db->size
+	// insert into db
+	add_student(newStudent);
 	save_database(db, db->filepath);
 
-	// --- Dynamic table print ---
-	int w_id, w_name, w_prog, w_mark;
-	compute_column_widths(db, &w_id, &w_name, &w_prog, &w_mark);
-
-	printf("\nCMS: New student inserted successfully:\n");
-	print_student_row(&newStudent, w_id, w_name, w_prog, w_mark);
-
-	printf("\nFull Student Table:\n");
-	print_table(db);
-
+	printf("\nCMS: New student inserted successfully.\n");
 	return true;
 }
 
@@ -920,11 +908,13 @@ bool run_command(char command[]) {
 		}
 		strcat_s(callphrase, sizeof(callphrase), command_ptr);
 		// printf("checking %s\n", callphrase);
+		//printf("checking context in loops %s\n", context);
 
 		for (int i = 0; i < num_of_operations; i++) {
 			if (_stricmp(callphrase, operations[i].name) == 0) {
 				// printf("%s is equal to %s\n", callphrase, operations[i].name);
 				command_found = true;
+				//printf("context in run_command %s\n", context);
 				command_success = operations[i].function(context);
 
 				/*if (!command_success) {
