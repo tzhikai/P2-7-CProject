@@ -5,6 +5,19 @@
 #include "utils.h"
 #include "data.h"
 
+
+static struct UndoStack UndoCmdsStatic;
+static struct UndoStack* UndoCmds = NULL;
+
+// function to call when making changes to 
+void set_undostack(struct UndoStack* undos) {
+	UndoCmds = undos;
+}
+// allow retrieval
+struct UndoStack* get_undostack() {
+	return UndoCmds;
+}
+
 // cleans up user input command before checking if it can be executed
 void clean_input(char command[]) {
 
@@ -277,3 +290,77 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 	
 }
 
+void create_undostack() {
+	//struct UndoStack* undos =  get_undostack();
+	if (UndoCmds != NULL) {
+		printf("UndoCmds alr exists.\n");
+		return;
+	}
+
+	printf("creating undostack\n");
+	/*UndoCmds = calloc(1, sizeof(struct UndoStack));
+	if (UndoCmds == NULL) {
+		printf("Memory allocation for UndoCmds failed.\n");
+		return;
+	}
+	printf("Memory allocated successfully at address: %p\n", UndoCmds);*/
+	
+	UndoCmds = &UndoCmdsStatic;
+	UndoCmds->oldest = 0;
+	UndoCmds->cmd_count = 0;
+
+	printf("UndoStack created successfully\n");
+
+	set_undostack(UndoCmds);
+}
+
+// called at end of insert_fn, delete_fn, update_fn
+void insert_undostack(char* command) {
+	struct UndoStack* undos = get_undostack();
+
+	if (undos == NULL) {
+		//create_undostack();
+		printf("UndoStack not created yet or is NULL.\n");
+		return;
+	}
+
+	// checking for empty commands (not likely)
+	if (command == NULL || command[0] == '\0') {
+		return;
+	}
+	// if not yet at max capacity, we can just add to empty slots
+	if (undos->cmd_count < MAX_UNDOS) {
+		strcpy_s(undos->commands[undos->cmd_count], MAX_CMD_LENGTH, command);
+		undos->cmd_count++;	//increment as we add (modding this value gives us the position to insert new undos)
+	}
+	else {	// if full, we override the oldest undo
+		strcpy_s(undos->commands[undos->oldest], MAX_CMD_LENGTH, command);
+		undos->oldest = (undos->oldest + 1) % MAX_UNDOS;	
+		// we use % MAX_UNDOS cuz if 5 is limit, and oldest is 5, then 5+1 is out of range, so we % to bring it to 1
+	}
+}
+
+bool use_undostack(char* retrieved_command) {
+	struct UndoStack* undos = get_undostack();
+
+	if (undos == NULL) {
+		//create_undostack();
+		printf("UndoStack not created yet or is NULL.\n");
+		return false;
+	}
+
+	if (undos->cmd_count == 0) {
+		printf("UndoStack is currently empty. There are no commands to run.\n");
+		return false;
+	}
+
+	int undo_index = (undos->oldest + undos->cmd_count - 1) % MAX_UNDOS;
+	// edit the retrieved_command ptr so i can use it outside this and not have to run it here
+	strcpy_s(retrieved_command, MAX_CMD_LENGTH, undos->commands[undo_index]);
+
+	undos->commands[undo_index][0] = '\0';	// we kill the used up command, not keeping it anymore
+
+	undos->cmd_count--;	// since i used one, total is less
+
+	return true;
+}

@@ -28,4 +28,18 @@ int extract_extrainput_values(
 	struct Database* StudentDB
 );
 
+#define MAX_UNDOS 5
+#define MAX_CMD_LENGTH 255
+
+struct UndoStack {
+	char commands[MAX_UNDOS][MAX_CMD_LENGTH];
+	int oldest;
+	int cmd_count;
+};
+
+void set_undostack(struct UndoStack* undos);
+struct UndoStack* get_undostack();
+void insert_undostack(char* command);
+bool use_undostack(char* retrieved_command);
+
 #endif // !INPUT_H

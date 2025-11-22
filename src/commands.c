@@ -343,6 +343,7 @@ bool delete_fn(char* context) {
 				printf("\nThe record with ID=%d is successfully deleted\n", iddelete);
 				cnfmdeleting = 0;
 				deleting = 0;
+				insert_undostack("test_insert_undo");
 				return true;
 			}
 			else if (_stricmp(cnfm, "n") == 0) {
@@ -355,6 +356,8 @@ bool delete_fn(char* context) {
 			}
 		}
 	}
+
+	//insert_undostack("test_insert_undo");
 }
 
 // jaison sort function
@@ -487,8 +490,6 @@ bool sort_fn(char* context) {
 }
 
 bool undo_fn(char* context){
-	printf("Undo function not yet implemented.\n");
-
 	clean_input(context);
 
 	int undo_count = 1;
@@ -496,17 +497,28 @@ bool undo_fn(char* context){
 	// decide how many undos to do
 	if (context != NULL && context[0] != '\0') {
 
-		char buffer[20];
-		if (sscanf_s(context, "%d", &buffer) != 0) {
+		clean_input(context);
+
+		if (sscanf_s(context, "%d", &undo_count) != 1) {
 			printf("Invalid undo amount specified, please use an integer.\n");
 			return false;
 		}
 
 		undo_count = atoi(context);
 	}
-	printf("here %d\n", undo_count);
+
+	char buffer[255];
 	while (undo_count > 0) {
-		printf("Performing undo %d...\n", undo_count);
+		printf("Performing %d to last undo \n", undo_count);
+
+		if (!use_undostack(buffer)) {
+			printf("Error running undo function.\n");
+			return false;
+		}
+
+		printf("Undo command to run: %s\n", buffer);
+		run_command(buffer);
+
 		undo_count--;
 	}
 
@@ -623,6 +635,8 @@ bool update_fn(char* context) {
 	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
 		s->id, s->name, s->programme, s->mark);
 
+	char undo_fields[100] = "";
+
 	if (hvpair_count > 0) {
 		//struct HeaderValuePair* hvarray = get_hvarray();
 
@@ -633,7 +647,10 @@ bool update_fn(char* context) {
 
 		for (int i = 0; i < hvpair_count; i++) {
 			//printf("Header: %d\n Value: %s\n", hvp_array[i].column_id, hvp_array[i].datapoint);
-
+			if (hvp_array[i].column_id != COL_OTHER) {
+				//snprintf(undo_fields, sizeof(undo_fields), "%s %s=%s", undo_fields, ,);
+			}
+		
 			switch (hvp_array[i].column_id) {
 				case COL_ID:
 					s->id = atoi(hvp_array[i].datapoint);
@@ -702,6 +719,11 @@ bool update_fn(char* context) {
 
 	update_width(db, idx, WIDTH_UPDATE);
 
+	char undo_command[100];
+	snprintf(undo_command, sizeof(undo_command), "UPDATE ID=%d%s", id, undo_fields);
+
+	insert_undostack(undo_command);
+
 	printf("\nCMS: Record with ID=%d successfully updated.\n", id);
 	return true;
 }
@@ -732,7 +754,7 @@ bool insert_fn(char* context) {
 		char id_buffer[20];
 
 		do {
-			printf("CMS: Enter the student ID to update: ");
+			printf("CMS: Enter the new student ID: ");
 			fgets(id_buffer, sizeof(id_buffer), stdin);
 
 			if (strlen(id_buffer) > 0) {
@@ -791,7 +813,7 @@ bool insert_fn(char* context) {
 			}
 
 			while (1) {
-				printf("CMS: Enter updated %s (Enter to skip): ", db->columns[i].header_name);
+				printf("CMS: Enter %s (Enter to skip): ", db->columns[i].header_name);
 				fgets(buf, sizeof(buf), stdin);
 
 				if (strlen(buf) > 0) {
@@ -824,6 +846,11 @@ bool insert_fn(char* context) {
 
 	add_student(newStudent);
 	update_width(db, db->size - 1, WIDTH_INSERT);
+
+	char undo_command[100];
+	snprintf(undo_command, sizeof(undo_command), "DELETE %d", newStudent.id);
+
+	insert_undostack(undo_command);
 
 	printf("CMS: New student inserted successfully.\n");
 
