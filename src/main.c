@@ -6,13 +6,28 @@
 #include "utils.h"
 #include "data.h"
 
+static void readDisclaimer() {
+	FILE* file = fopen("src\\DISCLAIMER.txt", "r");
+	if (file == NULL) {
+		printf("The Disclaimer is missing.\nGroup P2_7 comprising of members:\nTan Zhi Kai\nLee Hong Yih\nKim Beom Su\nJaison Tan\n\nswears that we do not cheat or plagiarise others' works in the making of this program.\n");
+		return;
+	}
+
+	char line_buffer[256];
+
+	while (fgets(line_buffer, sizeof(line_buffer), file) != NULL) {
+		printf("%s", line_buffer);
+	}
+
+	fclose(file);
+}
 
 int main() {
 	
 	char command[100];
 
 	printf("Booting up . . .\n");
-
+	readDisclaimer();
 
 	while (1) {
 		//printf("What would you like to do?: ");

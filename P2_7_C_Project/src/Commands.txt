@@ -1,0 +1,11 @@
+OPEN - Type "open + 'filename'" to open a Text File in "src/data/..." into the CMS database
+SHOW ALL - Type "show all" to display all records in the current opened database
+INSERT - Type "insert" to add a new record into the database
+QUERY - Type "query" to find a specific record in the database
+UPDATE - Type "update" to edit an existing record in the database
+DELETE - Type "delete" to remove an existing record in the database
+SAVE - Type "save" to update the opened text file with all the changes in the database
+SORT - Type "sort" to re-order the database according to ID, Name, Programme or Mark in ascending or descending order
+SUMMARY - Type "show summary" to display a statistical overview of all records in the database
+UNDO - Type "undo" to reverse the previous editing command: insert, update, delete
+NEW FILE - Type "new file" to create a new empty text file, or to save the current database into a new text file

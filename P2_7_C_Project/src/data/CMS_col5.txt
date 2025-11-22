@@ -1,0 +1,8 @@
+Database Name: Test_CMS
+Authors: Datta Bays
+
+Table Name: StudentRecords
+ID	Name		Programme		Grade	Mark
+2500123	John Souls	Software Engineering	Ba	70.5
+2500456	Lenny Ovo	Computer Science	Ca	63.4
+2500789	Artie Ex	Digital Supply Chain	Aa	85.9
