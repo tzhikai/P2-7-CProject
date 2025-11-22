@@ -22,6 +22,12 @@ bool showall_fn(char* context);
 bool delete_fn(char* context);
 bool sort_fn(char* context);
 bool undo_fn(char* context);
+bool update_fn(char* context);
+bool insert_fn(char* context);
+bool save_fn(char* context);
+bool summary_fn(char* context);
+bool query_fn(char* context);
+bool newfile_fn(char* context);
 
 bool run_command(char command[]);
 

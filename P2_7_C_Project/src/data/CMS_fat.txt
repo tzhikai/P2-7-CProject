@@ -1,0 +1,41 @@
+Database Name: Test_CMS
+Authors: Datta Bays
+
+Table Name: StudentRecords
+ID	Name		Programme		Mark
+2500123	John Souls	Software Engineering	70.5
+2500456	Lenny Ovo	Computer Science	63.4
+2500789	Artie Ex	Digital Supply Chain	85.9
+2501123	John TwoSouls	Software Engineering	71.5
+2501456	Lenny Twovo	Computer Science	64.4
+2501789	Artie Twoex	Digital Supply Chain	78.9
+2502123	John ThreeSouls	Software Engineering	72.5
+2502456	Lenny ThreeOvo	Computer Science	65.4
+2502789	Artie ThreeEx	Digital Supply Chain	75.9
+2503123	John ForSouls	Software Engineering	73.5
+2503456	Lenny ForOvo	Computer Science	66.4
+2503789	Artie ForEx	Digital Supply Chain	95.9
+2500123	John Souls	Software Engineering	70.5
+2500123	John Souls	Software Engineering	70.5
+2500456	Lenny Ovo	Computer Science	63.4
+2500789	Artie Ex	Digital Supply Chain	85.9
+2501123	John TwoSouls	Software Engineering	71.5
+2501456	Lenny Twovo	Computer Science	64.4
+2501789	Artie Twoex	Digital Supply Chain	78.9
+2502123	John ThreeSouls	Software Engineering	72.5
+2502456	Lenny ThreeOvo	Computer Science	65.4
+2502789	Artie ThreeEx	Digital Supply Chain	75.9
+2503123	John ForSouls	Software Engineering	73.5
+2503456	Lenny ForOvo	Computer Science	66.4
+2503789	Artie ForEx	Digital Supply Chain	95.9
+2500456	Lenny Ovo	Computer Science	63.4
+2500789	Artie Ex	Digital Supply Chain	85.9
+2501123	John TwoSouls	Software Engineering	71.5
+2501456	Lenny Twovo	Computer Science	64.4
+2501789	Artie Twoex	Digital Supply Chain	78.9
+2502123	John ThreeSouls	Software Engineering	72.5
+2502456	Lenny ThreeOvo	Computer Science	65.4
+2502789	Artie ThreeEx	Digital Supply Chain	75.9
+2503123	John ForSouls	Software Engineering	73.5
+2503456	Lenny ForOvo	Computer Science	66.4
+2503789	Artie ForEx	Digital Supply Chain	95.9
