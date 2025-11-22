@@ -720,7 +720,7 @@ bool insert_fn(char* context) {
 
 			if (!fgets(buf, sizeof(buf), stdin))
 				continue;
-			size_t len = sizeof(buf);
+			size_t len = strlen(buf);
 
 			if (len > 0 && buf[len - 1] == '\n') {
 				buf[len - 1] = '\0';
@@ -732,16 +732,15 @@ bool insert_fn(char* context) {
 
 			switch (col) {
 			case COL_ID: {
-				int id;
-				if (sscanf_s(buf, "%d", &id) != 1) {
-					printf("Invalid ID. Must be numeric.\n");
-					continue;
+				switch (validate_id(buf, -1, db)) {
+					case 1: //invalid id
+						continue;
+					case 2: //invalid but duplicate id
+						continue;
+					case 0: //valid, new id
+						newStudent.id = atoi(buf);
+						break;
 				}
-				if (id_search(id) != -1) {
-					printf("Duplicate ID found. Please enter a unique ID.\n");
-					continue;
-				}
-				newStudent.id = id;
 				break;
 			}
 			case COL_NAME:
