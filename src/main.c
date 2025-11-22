@@ -9,7 +9,7 @@
 
 int main() {
 	
-	char command[50];
+	char command[100];
 
 	printf("Booting up . . .\n");
 

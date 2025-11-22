@@ -148,6 +148,7 @@ void validate_name(char* name, int row_number) {
 		strcpy_s(name, sizeof(name), "N/A");
 		printf("Row %d, %s contains no valid characters.\n", row_number, name_copy);
 	}
+	free(name_copy);
 }
 
 void validate_programme(char* programme, int row_number) {
