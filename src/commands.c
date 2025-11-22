@@ -588,7 +588,7 @@ bool update_fn(char* context) {
 	}
 	while (getchar() != '\n'); // remove leftover newline
 
-	// Use your existing id_search()
+	// Use existing id_search()
 	int idx = id_search(id);
 	if (idx == -1) {
 		printf("CMS: The record with ID=%d does not exist.\n", id);
