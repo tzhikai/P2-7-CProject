@@ -294,7 +294,7 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 		printf("Header: %d\n Value: %s\n", hvpair[i].column_id, hvpair[i].datapoint);
 	}
 
-	set_hvarray(hvpair);
+	//set_hvarray(hvpair);
 
 	return pair_count;
 
