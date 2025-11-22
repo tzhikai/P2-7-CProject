@@ -658,41 +658,44 @@ bool update_fn(char* context) {
 		char buf[100];
 
 		for (int i = 0; i < db->column_count; i++) {
+
+			// --- Skip ID entirely ---
+			if (db->columns[i].column_id == COL_ID) {
+				printf("ID cannot be modified.\n");
+				continue;
+			}
+
+			// --- Prompt user ONLY for modifiable fields ---
 			printf("Enter new %s (Enter = skip): ", db->columns[i].header_name);
 
-			if (!fgets(buf, sizeof(buf), stdin)) continue; // read input
-			size_t len = strlen(buf);
-			if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0'; // remove newline
+			if (!fgets(buf, sizeof(buf), stdin))
+				continue;
 
-			if (strlen(buf) == 0) continue; // skip if empty
+			size_t len = strlen(buf);
+			if (len > 0 && buf[len - 1] == '\n')
+				buf[len - 1] = '\0';
+
+			if (strlen(buf) == 0)
+				continue;
 
 			switch (db->columns[i].column_id) {
-			case COL_ID:
-				printf("[Skipping ID – cannot be modified]\n");
-				break;
-
 			case COL_NAME:
-				validate_name(buf, idx); // your validate_name modifies buf in-place
+				validate_name(buf, idx);
 				strcpy_s(s->name, sizeof(s->name), buf);
 				break;
 
 			case COL_PROGRAMME:
-				validate_name(buf, idx); // capitalize properly
-				validate_programme(buf, idx); // ensure valid programme
+				validate_name(buf, idx);
+				validate_programme(buf, idx);
 				strcpy_s(s->programme, sizeof(s->programme), buf);
 				break;
 
-			case COL_MARK: {
-				float mark = validate_mark(buf, idx); // returns -1 if invalid
-				if (mark >= 0.0f) {
-					s->mark = mark;
-				}
-				else {
-					printf("Invalid mark. Keeping previous value.\n");
-				}
+			case COL_MARK:{
+				float mark = validate_mark(buf, idx);
+				if (mark >= 0.0f) s->mark = mark;
+				else printf("Invalid mark. Keeping previous value.\n");
 				break;
 			}
-
 			default:
 				printf("[Unknown column — skipped]\n");
 				break;
