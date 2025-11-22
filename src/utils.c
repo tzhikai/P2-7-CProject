@@ -59,7 +59,7 @@ void join_words(char input[]) {
 }
 
 
-int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* StudentDB, struct HeaderValuePair* hvp_array) {
+int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* StudentDB, struct HeaderValuePair* hvp_array, bool is_new) {
 	if (extrainput == NULL || extrainput[0] == '\0') {
 		printf("Extra input is NULL or empty.\n");
 		return 0;
@@ -98,13 +98,22 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 				case 1:
 					printf("Extra input invalid. ID invalid.\n");
 					return 0;
-				case 0:
+				case 0:	// valid id, unused
+					if (is_new) {	// is this used for INSERT?
+						*id_ptr = atoi(cmd_ptr);
+						printf("ID %s found, now is %d.\n", cmd_ptr, *id_ptr);
+						break;
+					}
 					printf("Extra input invalid. ID not found.\n");
 					return 0;
-				case 2:
-					*id_ptr = atoi(cmd_ptr);
-					printf("ID %s found, now is %d.\n", cmd_ptr, *id_ptr);
-					break;
+				case 2: // valid id, duplicate
+					if (!is_new) {	// is this used for UPDATE?
+						*id_ptr = atoi(cmd_ptr);
+						printf("ID %s found, now is %d.\n", cmd_ptr, *id_ptr);
+						break;
+					}
+					printf("Extra input invalid. ID already in use.\n");
+					return 0;
 				}
 			}
 		}
@@ -142,7 +151,7 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 	//const int max_pairs = 10;
 	//hvp_array = calloc(max_pairs, sizeof(struct HeaderValuePair));	// wont need to realloc since using max possible amt
 
-
+	
 	hvp_count = extract_extrainput_values(hvp_array, remaining, StudentDB);
 	printf("hvp_count = %d\n", hvp_count);
 	return hvp_count;
@@ -250,10 +259,13 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 			pair_count++;
 		}
 	}
+
+	
+
 	//zkdebug
-	/*for (int i = 0; i < pair_count; i++) {
+	for (int i = 0; i < pair_count; i++) {
 		printf("Header: %d\n Value: %s\n", hvpair[i].column_id, hvpair[i].datapoint);
-	}*/
+	}
 
 
 	return pair_count;

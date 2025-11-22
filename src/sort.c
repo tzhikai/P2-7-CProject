@@ -45,7 +45,7 @@ int compprogrammedown(const void* a, const void* b) {
 	const struct Student* StudentA = (const struct Student*)a;
 	const struct Student* StudentB = (const struct Student*)b;
 	//return StudentB->name[0] - StudentA->name[0];
-	return strcmp(StudentB->name, StudentA->programme); //zkchange: name[0] means Tim and Tom are the same
+	return strcmp(StudentB->programme, StudentA->programme); //zkchange: name[0] means Tim and Tom are the same
 }
 
 // Ascending Mark Sort

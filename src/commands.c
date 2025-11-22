@@ -571,10 +571,6 @@ bool summary_fn(char* context) {
 	return true;
 }
 
-
-
-
-
 //hy update
 bool update_fn(char* context) {
 	struct Database* db = get_database();
@@ -586,21 +582,29 @@ bool update_fn(char* context) {
 	int id = 0;
 	int* id_ptr = &id;	// for passing by reference to extract_extrainput_id
 
-	/*char* test_str = get_str();
-	printf_s("test: %s", test_str);*/
 	struct HeaderValuePair hvp_array[10];
 	memset(hvp_array, 0, sizeof(hvp_array));
-	int hvpair_count = extract_extrainput_id(id_ptr, context, db, hvp_array);
 	
+	int hvpair_count = 0;
+	if (context != NULL && context[0] != '\0') {
+		hvpair_count = extract_extrainput_id(id_ptr, context, db, hvp_array, false);
+	}
 
 	if (id == 0) {
 		// ask for ID
-		printf("CMS: Enter the student ID to update: ");
-		while (scanf_s("%d", &id) != 1) {
-			printf("CMS: Invalid ID. Enter a numeric ID: ");
-			while (getchar() != '\n'); // clear input buffer
-		}
-		while (getchar() != '\n'); // remove leftover newline
+		char id_buffer[20];
+
+		do {
+			printf("CMS: Enter the student ID to update: ");
+			fgets(id_buffer, sizeof(id_buffer), stdin);
+
+			if (strlen(id_buffer) > 0) {
+				id_buffer[strlen(id_buffer) - 1] = '\0';
+			}
+
+		} while (validate_id(id_buffer, -1, db) != 2);
+
+		id = atoi(id_buffer);
 	}
 
 	// Use your existing id_search()
@@ -707,69 +711,112 @@ bool insert_fn(char* context) {
 		return false;
 	}
 
+	int id = 0;
+	int* id_ptr = &id;	// for passing by reference to extract_extrainput_id
+
+	struct HeaderValuePair hvp_array[10];
+	memset(hvp_array, 0, sizeof(hvp_array));
+
+	int hvpair_count = 0;
+	if (context != NULL && context[0] != '\0') {
+		hvpair_count = extract_extrainput_id(id_ptr, context, db, hvp_array, true);
+	}
+
+	if (id == 0) {
+		// ask for ID first, since its the primary key
+		char id_buffer[20];
+
+		do {
+			printf("CMS: Enter the student ID to update: ");
+			fgets(id_buffer, sizeof(id_buffer), stdin);
+
+			if (strlen(id_buffer) > 0) {
+				id_buffer[strlen(id_buffer) - 1] = '\0';
+			}
+
+		} while (validate_id(id_buffer, -1, db) != 0);
+
+		id = atoi(id_buffer);
+	}
+
 	struct Student newStudent = { 0 };
-	char buf[100];
+	newStudent.id = id;
 
-	printf("\nInsert New Student\n\n");
+	if (hvpair_count > 0) {
+		printf("handle using oneline\n");
 
-	for (int i = 0; i < db->column_count; i++) {
-		int col = db->columns[i].column_id;
+		if (hvp_array == NULL) {
+			printf("NULL HVARRAY\n");
+			return false;
+		}
 
-		while (1) {
-			printf("Enter %s: ", db->columns[i].header_name);
+		for (int i = 0; i < hvpair_count; i++) {
+			//printf("Header: %d\n Value: %s\n", hvp_array[i].column_id, hvp_array[i].datapoint);
 
-			if (!fgets(buf, sizeof(buf), stdin))
-				continue;
-			size_t len = strlen(buf);
-
-			if (len > 0 && buf[len - 1] == '\n') {
-				buf[len - 1] = '\0';
-			}
-			if (strlen(buf) == 0) {
-				printf("This field cannot be empty.\n");
-				continue;
-			}
-
-			switch (col) {
-			case COL_ID: {
-				switch (validate_id(buf, -1, db)) {
-					case 1: //invalid id
-						continue;
-					case 2: //invalid but duplicate id
-						continue;
-					case 0: //valid, new id
-						newStudent.id = atoi(buf);
-						break;
-				}
+			switch (hvp_array[i].column_id) {
+			case COL_ID:	// ID is calculated before the rest of the fields and so isnt in this array
 				break;
-			}
 			case COL_NAME:
-				validate_name(buf, -1);
-				strcpy_s(newStudent.name, sizeof(newStudent.name), buf);
+				strcpy_s(newStudent.name, sizeof(newStudent.name), hvp_array[i].datapoint);
 				break;
 			case COL_PROGRAMME:
-				validate_name(buf, -1);
-				validate_programme(buf, -1);
-				strcpy_s(newStudent.programme, sizeof(newStudent.programme), buf);
+				strcpy_s(newStudent.programme, sizeof(newStudent.programme), hvp_array[i].datapoint);
 				break;
+			case COL_MARK:
+				newStudent.mark = atof(hvp_array[i].datapoint);
+				break;
+			}
+		}
 
-			case COL_MARK: {
-				float mark = validate_mark(buf, -1);
-				if (mark < 0 || mark > 100) {
-					printf("Invalid mark. Must be between 0 and 100.\n");
-					continue;
+
+	}
+	else {
+		//printf("Handle normally\n");
+		char buf[100];
+		printf("\nInsert New Student\n\n");
+
+		for (int i = 0; i < db->column_count; i++) {
+			int col = db->columns[i].column_id;
+
+			switch (col) {
+			case COL_ID:	// alr given, skip
+				continue;
+			case COL_OTHER:	//unexpected column, skip
+				continue;
+			}
+
+			while (1) {
+				printf("CMS: Enter updated %s (Enter to skip): ", db->columns[i].header_name);
+				fgets(buf, sizeof(buf), stdin);
+
+				if (strlen(buf) > 0) {
+					buf[strlen(buf) - 1] = '\0';
 				}
-				newStudent.mark = mark;
-				break;
-			}
-			case COL_OTHER:
-				printf("Unhandled column. Skipping.\n");
-				break;
-			}
 
-			break;
+				if (col == COL_MARK) {
+					if (!(validate_mark(buf, -1) < 0)) {	// -1.0 return means not validate mark
+						newStudent.mark = atof(buf);
+						break;
+					}
+					else {// continue looping if mark validation fails
+						continue;
+					}
+				}
+				
+				validate_name(buf, -1);
+				if (col == COL_PROGRAMME) {
+					validate_programme(buf, -1);
+					strcpy_s(newStudent.programme, sizeof(newStudent.programme), buf);
+					break;
+				}
+				strcpy_s(newStudent.name, sizeof(newStudent.name), buf);
+				break;
+				
+			}
+			
 		}
 	}
+
 	add_student(newStudent);
 	printf("CMS: New student inserted successfully.\n");
 
