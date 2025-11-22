@@ -339,7 +339,7 @@ bool delete_fn(char* context) {
 
 				//update width
 				struct Database* db = get_database();
-				update_width(db, indexdelete, DELETE);
+				update_width(db, indexdelete, WIDTH_DELETE);
 
 				printf("\nThe record with ID=%d is successfully deleted\n", iddelete);
 				cnfmdeleting = 0;
@@ -620,7 +620,7 @@ bool update_fn(char* context) {
 
 		switch (db->columns[i].column_id) {
 		case COL_ID:
-			printf("[Skipping ID – cannot be modified]\n");
+			printf("[Skipping ID - cannot be modified]\n");
 			break;
 
 		case COL_NAME:
@@ -652,7 +652,7 @@ bool update_fn(char* context) {
 		}
 
 	// update width
-	update_width(db, idx, UPDATE);
+	update_width(db, idx, WIDTH_UPDATE);
 
 	printf("\nCMS: Record with ID=%d successfully updated.\n", id);
 	return true;
@@ -727,8 +727,7 @@ void print_table(struct Database* db) {
 */
 
 // width calculation
-// put types into an enum
-typedef enum { INSERT, UPDATE, DELETE } WidthAction;
+
 
 // Get string length of a student field based on column
 int get_student_field_len(struct Student* s, struct ColumnMap* col) {
@@ -769,29 +768,31 @@ void update_width(struct Database* db, int row_idx, WidthAction action) {
 		int row_len = 0;
 
 		// Only compute row_len for INSERT or UPDATE (existing row)
-		if (action != DELETE && row_idx < db->size) {
+		if (action != WIDTH_DELETE && row_idx < db->size) {
 			row_len = get_student_field_len(&db->StudentRecord[row_idx], col);
 		}
 
-		if (action == INSERT) {
+		// hy debug
+		printf("[DEBUG] Column %d (%s): old_width=%d, row_len=%d\n",
+			i, col->header_name, old_width, row_len);
+
+		if (action == WIDTH_INSERT) {
 			if (row_len > col->max_width)
 				col->max_width = row_len;
+			printf("[DEBUG] New width after INSERT: %d\n", col->max_width);
 		}
-		else if (action == UPDATE) {
+		else if (action == WIDTH_UPDATE) {
 			if (row_len > col->max_width) {
 				col->max_width = row_len;
 			}
 			else if (old_width == row_len) {
 				col->max_width = recalc_column_max(db, col);
 			}
+			printf("[DEBUG] New width after UPDATE: %d\n", col->max_width);
 		}
-		else if (action == DELETE) {
-			if (row_idx < db->size) {
-				row_len = get_student_field_len(&db->StudentRecord[row_idx], col);
-				if (old_width == row_len) {
-					col->max_width = recalc_column_max(db, col);
-				}
-			}
+		else if (action == WIDTH_DELETE) {
+			col->max_width = recalc_column_max(db, col);
+			printf("[DEBUG] New width after DELETE: %d\n", col->max_width);
 		}
 	}
 }
@@ -874,10 +875,9 @@ bool insert_fn(char* context) {
 
 	// insert into db
 	add_student(newStudent);
-	save_database(db, db->filepath);
 
 	//update width
-	update_width(db, db->size - 1, INSERT);
+	update_width(db, db->size - 1, WIDTH_INSERT);
 
 	printf("\nCMS: New student inserted successfully.\n");
 	return true;

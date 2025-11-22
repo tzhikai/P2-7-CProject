@@ -3,6 +3,9 @@
 
 #include <stdbool.h>
 
+// put types into an enum
+typedef enum { WIDTH_INSERT, WIDTH_UPDATE, WIDTH_DELETE } WidthAction;
+
 // structure for the operation function
 struct operation {
 	char name[20];			// user input to call the fn
@@ -12,6 +15,7 @@ struct operation {
 
 // hy test functions
 bool summary_fn(char* context);
+void update_width(struct Database* db, int row_idx, WidthAction action);
 
 // function prototypes
 bool open_fn(char* filename);	// context in this means filename 
