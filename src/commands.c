@@ -625,7 +625,7 @@ bool update_fn(char* context) {
 		}
 
 		for (int i = 0; i < hvpair_count; i++) {
-			printf("Header: %d\n Value: %s\n", hvp_array[i].column_id, hvp_array[i].datapoint);
+			//printf("Header: %d\n Value: %s\n", hvp_array[i].column_id, hvp_array[i].datapoint);
 
 			switch (hvp_array[i].column_id) {
 				case COL_ID:

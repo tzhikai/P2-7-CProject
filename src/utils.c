@@ -142,49 +142,10 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 	//const int max_pairs = 10;
 	//hvp_array = calloc(max_pairs, sizeof(struct HeaderValuePair));	// wont need to realloc since using max possible amt
 
-	if (hvp_array == NULL) {
-		printf("Memory allocation for hvp_array failed\n");
-		return 0;
-	}
-	else {
-		printf("it worked\n");
-	}
-	if (hvp_array == (void*)-1) {
-		printf("calloc returned -1 (error)\n");
-	}
-	else if ((uintptr_t)hvp_array > 0xFFFFFFFF00000000) {
-		printf("Pointer is in kernel space - INVALID!\n");
-	}
-	else {
-		printf("all good\n");
-	}
 
 	hvp_count = extract_extrainput_values(hvp_array, remaining, StudentDB);
 	printf("hvp_count = %d\n", hvp_count);
 	return hvp_count;
-	
-
-	/*if (hvp_count > 0) {
-		for (int i = 0; i < hvp_count; i++) {
-			switch (hvp_array[i].column_id) {
-			case COL_ID:
-				s->id = atoi(hvp_array[i].datapoint);
-				break;
-			case COL_NAME:
-				strcpy_s(s->name, sizeof(s->name), hvp_array[i].datapoint);
-				break;
-			case COL_PROGRAMME:
-				strcpy_s(s->programme, sizeof(s->programme), hvp_array[i].datapoint);
-				break;
-			case COL_MARK:
-				s->mark = atof(hvp_array[i].datapoint);
-				break;
-			case COL_OTHER:
-				break;
-			}
-		}*/
-		//free(remaining);
-	//}
 
 }
 
@@ -289,12 +250,11 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 			pair_count++;
 		}
 	}
-
-	for (int i = 0; i < pair_count; i++) {
+	//zkdebug
+	/*for (int i = 0; i < pair_count; i++) {
 		printf("Header: %d\n Value: %s\n", hvpair[i].column_id, hvpair[i].datapoint);
-	}
+	}*/
 
-	//set_hvarray(hvpair);
 
 	return pair_count;
 
