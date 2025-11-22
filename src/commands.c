@@ -522,10 +522,17 @@ void print_summary(struct Database* db) {
 	float total = 0;
 	int highestIndex = 0;
 	int lowestIndex = 0;
+	int validCount = 0;
 
 	for (int i = 0; i < db->size; i++) {
 		float m = db->StudentRecord[i].mark;
+
+		// when mark is negative
+		if (m < 0) {
+			continue;
+		}
 		total += m;
+		validCount++;
 
 		if (m > highest) {
 			highest = m;
@@ -535,6 +542,13 @@ void print_summary(struct Database* db) {
 			lowest = m;
 			lowestIndex = i;
 		}
+	}
+
+	// Exception handling for negative marks
+	if (validCount == 0) {
+		printf("CMS: Summary Statistics\n");
+		printf("No valid marks to summarize (all marks are negative).\n");
+		return;
 	}
 
 	float average = total / db->size;
@@ -687,41 +701,87 @@ bool update_fn(char* context) {
 // =====================================================
 bool insert_fn(char* context) {
 	struct Database* db = get_database();
-	if (db == NULL) {
+	if (db == NULL || db->StudentRecord == NULL) {
 		printf("CMS: Please OPEN the database first.\n");
 		return false;
 	}
 
 	struct Student newStudent = { 0 };
+	char buf[100];
 
-	printf("Enter Student ID: ");
-	while (scanf_s("%d", &newStudent.id) != 1) {
-		printf("Invalid input. Please enter a numeric ID: ");
-		while (getchar() != '\n');
+	printf("\n=== Insert New Student ===\n\n");
+
+	for (int i = 0; i < db->column_count; i++) {
+		int col = db->columns[i].column_id;
+
+		while (1) {
+			printf("Enter %s: ", db->columns[i].header_name);
+
+			if (!fgets(buf, sizeof(buf), stdin))
+				continue;
+
+			size_t len = strlen(buf);
+			if (len > 0 && buf[len - 1] == '\n')
+				buf[len - 1] = '\0';
+
+			if (strlen(buf) == 0) {
+				printf("This field cannot be empty.\n");
+				continue;
+			}
+
+			// ---- Validation & Assignment ----
+			switch (col) {
+
+			case COL_ID: {
+				int id;
+				if (sscanf_s(buf, "%d", &id) != 1) {
+					printf("Invalid ID. Must be numeric.\n");
+					continue;
+				}
+				if (id_search(id) != -1) {
+					printf("Duplicate ID found. Please enter a unique ID.\n");
+					continue;
+				}
+				newStudent.id = id;
+				break;
+			}
+
+			case COL_NAME:
+				validate_name(buf, -1);
+				strcpy_s(newStudent.name, sizeof(newStudent.name), buf);
+				break;
+
+			case COL_PROGRAMME:
+				validate_name(buf, -1);
+				validate_programme(buf, -1);
+				strcpy_s(newStudent.programme, sizeof(newStudent.programme), buf);
+				break;
+
+			case COL_MARK: {
+				float mark = validate_mark(buf, -1);
+				if (mark < 0 || mark > 100) {
+					printf("Invalid mark. Must be between 0 and 100.\n");
+					continue;
+				}
+				newStudent.mark = mark;
+				break;
+			}
+
+			default:
+				printf("[Unknown column – skipping]\n");
+				break;
+			}
+
+			// valid input ? break loop
+			break;
+		}
 	}
 
-	if (id_search(newStudent.id) != -1) {
-		printf("CMS: Duplicate ID found. Cannot insert.\n");
-		while (getchar() != '\n');
-		return false;
-	}
-
-	printf("Enter Name: ");
-	scanf_s(" %[^\n]", newStudent.name, (unsigned)_countof(newStudent.name));
-
-	printf("Enter Programme: ");
-	scanf_s(" %[^\n]", newStudent.programme, (unsigned)_countof(newStudent.programme));
-
-	printf("Enter Mark: ");
-	while (scanf_s("%f", &newStudent.mark) != 1 || newStudent.mark < 0 || newStudent.mark > 100) {
-		printf("Invalid mark. Please enter between 0 and 100: ");
-		while (getchar() != '\n');
-	}
-
+	// insert into db
 	add_student(newStudent);
-	printf("New student inserted successfully.\n");
 	save_database(db, db->filepath);
 
+	printf("\nCMS: New student inserted successfully.\n");
 	return true;
 }
 
