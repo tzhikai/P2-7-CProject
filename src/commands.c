@@ -587,7 +587,7 @@ bool update_fn(char* context) {
 	}
 	while (getchar() != '\n'); // remove leftover newline
 
-	// Use your existing id_search()
+	// Use existing id_search()
 	int idx = id_search(id);
 	if (idx == -1) {
 		printf("CMS: The record with ID=%d does not exist.\n", id);
@@ -606,12 +606,14 @@ bool update_fn(char* context) {
 
 	for (int i = 0; i < db->column_count; i++) {
 		printf("Enter new %s (Enter = skip): ", db->columns[i].header_name);
-
-		if (!fgets(buf, sizeof(buf), stdin)) continue; // read input
+		// read input
+		if (!fgets(buf, sizeof(buf), stdin)) continue;
 		size_t len = strlen(buf);
-		if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0'; // remove newline
+		// remove newline
+		if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0';
 
-		if (strlen(buf) == 0) continue; // skip if empty
+		// skip if empty
+		if (strlen(buf) == 0) continue;
 
 		switch (db->columns[i].column_id) {
 		case COL_ID:
@@ -650,6 +652,73 @@ bool update_fn(char* context) {
 	return true;
 }
 
+// dynamic table
+void compute_column_widths(struct Database* db, int* w_id, int* w_name, int* w_prog, int* w_mark) {
+	*w_id = 2;
+	*w_name = 4;
+	*w_prog = 9;
+	*w_mark = 4;
+
+	for (int i = 0; i < db->size; i++) {
+		struct Student* s = &db->StudentRecord[i];
+		char temp[20];
+
+		// FIX: include buffer size
+		sprintf_s(temp, sizeof(temp), "%d", s->id);
+		if (strlen(temp) > *w_id) *w_id = strlen(temp);
+
+		if (strlen(s->name) > *w_name) *w_name = strlen(s->name);
+		if (strlen(s->programme) > *w_prog) *w_prog = strlen(s->programme);
+
+		sprintf_s(temp, sizeof(temp), "%.1f", s->mark);
+		if (strlen(temp) > *w_mark) *w_mark = strlen(temp);
+	}
+}
+
+void print_student_row(struct Student* s, int w_id, int w_name, int w_prog, int w_mark) {
+	printf("%-*d  %-*s  %-*s  %-*.1f\n",
+		w_id, s->id,
+		w_name, s->name,
+		w_prog, s->programme,
+		w_mark, s->mark
+	);
+}
+
+void print_table(struct Database* db) {
+	if (db == NULL || db->size == 0) {
+		printf("CMS: No records found.\n");
+		return;
+	}
+
+	int w_id = 2, w_name = 4, w_prog = 9, w_mark = 4;
+	compute_column_widths(db, &w_id, &w_name, &w_prog, &w_mark);
+
+	// Print headers
+	printf("| %-*s | %-*s | %-*s | %-*s |\n",
+		w_id, "ID", w_name, "Name", w_prog, "Programme", w_mark, "Mark");
+
+	// Print separator
+	printf("|");
+	for (int i = 0; i < w_id + 2; i++) printf("-");
+	printf("|");
+	for (int i = 0; i < w_name + 2; i++) printf("-");
+	printf("|");
+	for (int i = 0; i < w_prog + 2; i++) printf("-");
+	printf("|");
+	for (int i = 0; i < w_mark + 2; i++) printf("-");
+	printf("|\n");
+
+	// Print rows
+	for (int i = 0; i < db->size; i++) {
+		struct Student* s = &db->StudentRecord[i];
+		printf("| %-*d | %-*s | %-*s | %-*.1f |\n",
+			w_id, s->id,
+			w_name, s->name,
+			w_prog, s->programme,
+			w_mark, s->mark);
+	}
+}
+
 // =====================================================
 // INSERT FUNCTION
 // =====================================================
@@ -683,9 +752,8 @@ bool insert_fn(char* context) {
 				continue;
 			}
 
-			// ---- Validation & Assignment ----
+			// Validation & assignment
 			switch (col) {
-
 			case COL_ID: {
 				int id;
 				if (sscanf_s(buf, "%d", &id) != 1) {
@@ -722,20 +790,29 @@ bool insert_fn(char* context) {
 			}
 
 			default:
-				printf("[Unknown column – skipping]\n");
+				printf("[Unknown column - skipping]\n");
 				break;
 			}
 
-			// valid input ? break loop
+			// Valid input -> break loop
 			break;
 		}
 	}
 
-	// insert into db
-	add_student(newStudent);
+	// Insert into DB and increment size
+	add_student(newStudent); // ensure this updates db->size
 	save_database(db, db->filepath);
 
-	printf("\nCMS: New student inserted successfully.\n");
+	// --- Dynamic table print ---
+	int w_id, w_name, w_prog, w_mark;
+	compute_column_widths(db, &w_id, &w_name, &w_prog, &w_mark);
+
+	printf("\nCMS: New student inserted successfully:\n");
+	print_student_row(&newStudent, w_id, w_name, w_prog, w_mark);
+
+	printf("\nFull Student Table:\n");
+	print_table(db);
+
 	return true;
 }
 
