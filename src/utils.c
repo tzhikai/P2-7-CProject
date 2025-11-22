@@ -5,9 +5,6 @@
 #include "utils.h"
 #include "data.h"
 
-// proto hy
-
-
 // cleans up user input command before checking if it can be executed
 void clean_input(char command[]) {
 
