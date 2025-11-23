@@ -1,0 +1,14 @@
+Database Name: Test_CMS
+Authors: Datta Bays
+
+Table Name: StudentRecords
+ID	Name		Course		Score
+2500123	John Souls	Software Engineering	70.5
+3500456	Lenny Ovo	Computer Science	63.4
+25o0789	Artie Ex	Digital Supply Chain	85.9
+2500123	Red Er	Havier Crend	46.2
+22500123	Jhn Sols	Software Engineering	70.2
+2501123	John    Souls	Software ENgineering	-70.5
+2502123	J!hn@So#ls	Software engineering	0.0000000001
+2503123	john sOuls	Software  Engineering	70.5
+2504123	John Souls	Software Engineering	101.5

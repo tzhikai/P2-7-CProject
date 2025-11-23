@@ -1,0 +1,8 @@
+Database Name: Test_CMS
+Authors: Datta Bays
+
+Table Name: StudentRecords
+Mark	ID	Programme		Name
+70.5	2500123	Software Engineering	John Souls
+63.4	2500456	Computer Science	Lenny Ovo
+85.9	2500789	Digital Supply Chain	Artie Ex

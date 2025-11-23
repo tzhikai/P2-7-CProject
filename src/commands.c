@@ -543,6 +543,113 @@ bool sort_fn(char* context) {
 	return true;
 }
 
+// Jaison NewFile Function
+bool newfile_fn(char* context) {
+	int cnfminit = 1, newfile = 0, cnfm_int;
+	char cnfm[7];
+
+	//initialize ^^
+	while (cnfminit == 1) {
+		printf("Would you like to\n1. Make a new empty text file\n2. Save current database to new text file\nType \"Exit\" to cancel\nP2_7: ");
+		fgets(cnfm, sizeof(cnfm), stdin);
+		clean_input(cnfm);
+
+		if (_stricmp(cnfm, "exit") == 0) {
+			cnfminit = 0; //break
+			return false;
+		}
+		else if (isdigit(cnfm[0])) {
+			cnfm_int = atoi(cnfm);
+		}
+		else {
+			printf("\nInvalid input. Please enter either 1 or 2.\n\n");
+			continue;
+		}
+
+		if (cnfm_int > 2 || cnfm_int < 0) {
+			printf("\nInvalid input. Please enter either 1 or 2.\n\n");
+			continue;
+		}
+		else {
+			newfile = 1;
+		}
+
+		while (newfile == 1) {
+			char filename[50], dbname[50], authorname[50], tablename[50], file_ext[5] = ".txt", filepath[250] = "src\\data\\";
+			FILE* file = NULL;
+
+			printf("Enter the name for new file (without .txt extension):\nMAX 50 CHARACTERS\nP2_7: ");
+			fgets(filename, sizeof(filename), stdin);
+			clean_input(filename);
+			strcat_s(filepath, sizeof(filepath), filename);
+			strcat_s(filepath, sizeof(filepath), file_ext);
+
+			if (fopen_s(&file, filepath, "r") == 0 && file != NULL) {
+				fclose(file);
+				printf("File %s already exists. Please choose a different name.\n", filename);
+				continue;
+			}
+
+			printf("Enter the database name for new file:\nMAX 50 CHARACTERS\nP2_7: ");
+			fgets(dbname, sizeof(dbname), stdin);
+			clean_input(dbname);
+
+			printf("Enter the author name(s) for new file:\nMAX 50 CHARACTERS\nP2_7: ");
+			fgets(authorname, sizeof(authorname), stdin);
+			clean_input(authorname);
+
+			printf("Enter the table name for new file:\nMAX 50 CHARACTERS\nP2_7: ");
+			fgets(tablename, sizeof(tablename), stdin);
+			clean_input(tablename);
+
+			fopen_s(&file, filepath, "w");
+
+			if (file == NULL) {
+				printf("Unable to open file for saving: %s\n", filename);
+				newfile = 0;
+				cnfminit = 0;
+				return false; //break
+			}
+
+			// Default text file header and titles
+			fprintf(file, "Database Name: %s\n", dbname);
+			fprintf(file, "Authors: %s\n\n", authorname);
+			fprintf(file, "Table Name: %s\n", tablename);
+
+			switch (cnfm_int) {
+			case 1: //New Empty Text File
+				fprintf(file, "ID\tNAME\tPROGRAMME\tMARK\n");
+			case 2: {//Current database to new text file
+				struct Database* StudentDB = get_database();
+
+				if (StudentDB != NULL) {
+					for (int i = 0; i < StudentDB->column_count; i++) {
+						fprintf(file, "%s", StudentDB->columns[i].header_name);
+						if (i < StudentDB->column_count - 1)
+							fprintf(file, "\t");
+					}
+					fprintf(file, "\n");
+
+					// Records
+					for (int i = 0; i < StudentDB->size; i++) {
+						fprintf(file, "%d\t%s\t%s\t%.1f\n",
+							StudentDB->StudentRecord[i].id,
+							StudentDB->StudentRecord[i].name ? StudentDB->StudentRecord[i].name : "N/A",
+							StudentDB->StudentRecord[i].programme ? StudentDB->StudentRecord[i].programme : "N/A",
+							StudentDB->StudentRecord[i].mark);
+					}
+				}
+			}
+			}
+			fclose(file);
+			printf("CMS: New database file %s created successfully.\n", filename);
+			newfile = 0;
+		}
+		cnfminit = 0;
+		return true;
+	}
+}
+
 bool undo_fn(char* context){
 	struct Database* StudentDB = get_database(); //struct Student and function get_database() is in data.c
 	//int student_count = studentcount(); Old code 
@@ -648,49 +755,55 @@ bool undo_fn(char* context){
 	return true;
 }
 
-// HY 
+// HY show summary
 void print_summary(struct Database* db) {
+	// Validate database
 	if (db == NULL || db->size == 0) {
 		printf("CMS: No records found.\n");
 		return;
 	}
-
-	float highest = -FLT_MAX;
-	float lowest = FLT_MAX;
+	// Initialize tracking variables
+	float highest = -1;
+	float lowest = 101;
 	float total = 0;
-	int highestIndex = 0;
-	int lowestIndex = 0;
+	int highestIndex = -1;
+	int lowestIndex = -1;
 	int validCount = 0;
 
+	// Iterate through all student records
 	for (int i = 0; i < db->size; i++) {
 		float m = db->StudentRecord[i].mark;
-		// when mark is negative
+		// when mark is negative (skipped)
 		if (m < 0) {
 			continue;
 		}
+
 		total += m;
 		validCount++;
 
+		// Check highest mark
 		if (m > highest) {
 			highest = m;
 			highestIndex = i;
 		}
+		// Check lowest mark
 		if (m < lowest) {
 			lowest = m;
 			lowestIndex = i;
 		}
 	}
-	// Exception handling for negative marks
+	// Exception handling for no valid marks in database
 	if (validCount == 0) {
 		printf("CMS: Summary Statistics\n");
 		printf("No valid marks to summarize (all marks are negative).\n");
 		return;
 	}
-
-	float average = total / db->size;
+	// Gets average of non invalid marks
+	float average = total / validCount;
 
 	printf("CMS: Summary Statistics\n");
 	printf("Total number of students: %d\n", db->size);
+	// Only displays valid-mark count if some marks were invalid
 	if (db->size != validCount) {
 		printf("Total number of students with valid marks: %d\n", validCount);
 	}
@@ -703,6 +816,7 @@ void print_summary(struct Database* db) {
 		lowest, db->StudentRecord[lowestIndex].name);
 }
 
+// Call summary function
 bool summary_fn(char* context) {
 	struct Database* db = get_database();
 	print_summary(db);
@@ -711,12 +825,14 @@ bool summary_fn(char* context) {
 
 //hy update
 bool update_fn(char* context) {
+	// Load database and validate
 	struct Database* db = get_database();
 	if (db == NULL || db->StudentRecord == NULL) {
 		printf("CMS: No database loaded. Please OPEN one first.\n");
 		return false;
 	}
 	//printf("context here: %s\n", context);
+	// Extract ID and header/value pairs
 	int id = 0;
 	int* id_ptr = &id;	// for passing by reference to extract_extrainput_id
 
@@ -728,6 +844,7 @@ bool update_fn(char* context) {
 		hvpair_count = extract_extrainput_id(id_ptr, context, db, hvp_array, false);
 	}
 
+	// Prompt user if ID not found
 	if (id == 0) {
 		// ask for ID
 		char id_buffer[20];
@@ -745,7 +862,7 @@ bool update_fn(char* context) {
 		id = atoi(id_buffer);
 	}
 
-	// Use your existing id_search()
+	// Search for student with the given ID
 	int idx = id_search(id);
 	if (idx == -1) {
 		printf("CMS: The record with ID=%d does not exist.\n", id);
@@ -757,6 +874,8 @@ bool update_fn(char* context) {
 	printf("\nCMS: Record found.\n");
 	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
 		s->id, s->name, s->programme, s->mark);
+
+	// If extrainput header-value pairs exist, apply them
 
 	char undo_fields_all[100] = "";
 	
@@ -775,6 +894,7 @@ bool update_fn(char* context) {
 		
 			switch (hvp_array[i].column_id) {
 				case COL_ID:
+					//printf("ID cannot be modified.\n");
 					snprintf(og_data, sizeof(og_data), "=%d", s->id);
 					s->id = atoi(hvp_array[i].datapoint);
 					break;
@@ -809,8 +929,9 @@ bool update_fn(char* context) {
 		}
 
 	}
+	// If no extrainput go to interactive update mode
 	else {
-		printf("No extrainput given or invalid\n");
+		/*printf("No extrainput given or invalid\n");*/
 		printf("\n=== Enter New Data (Press Enter to skip) ===\n\n");
 
 		char buf[100];
@@ -825,10 +946,6 @@ bool update_fn(char* context) {
 			if (strlen(buf) == 0) continue; // skip if empty
 
 			switch (db->columns[i].column_id) {
-			case COL_ID:
-				printf("[Skipping ID – cannot be modified]\n");
-				break;
-
 			case COL_NAME:
 				validate_name(buf, idx); // your validate_name modifies buf in-place
 				strncpy_s(s->name, sizeof(s->name), buf, _TRUNCATE);
@@ -857,7 +974,7 @@ bool update_fn(char* context) {
 			}
 		}
 	}
-
+	// Update column width for table formatting
 	update_width(db, idx, WIDTH_UPDATE);
 
 	char undo_command[100];
@@ -1137,19 +1254,35 @@ void update_width(struct Database* db, int row_idx, WidthAction action) {
 	}
 }
 
+bool help_fn(char* context) {
+	FILE* file = fopen("src\\Commands.txt", "r");
+
+	char line_buffer[256];
+	int index = 1;
+
+	while (fgets(line_buffer, sizeof(line_buffer), file) != NULL) {
+		printf("%d. %s", index, line_buffer);
+		index++;
+	}
+
+	fclose(file);
+}
+
 
 // array of available commands (all new ones go in here)
 struct operation operations[] = {
-	{"OPEN", 1, open_fn},
-	{"SHOW ALL", 2, showall_fn},
-	{"SORT", 1, sort_fn},
-	{"DELETE", 1, delete_fn},
-	{"UNDO", 1, undo_fn},
-	{ "SHOW SUMMARY", 2, summary_fn },
-	{ "UPDATE", 1, update_fn },
-	{"INSERT", 1, insert_fn},
-	{"QUERY", 1, query_fn},
-	{"SAVE", 1, save_fn}
+	{"OPEN", 1, open_fn},				//1
+	{"SHOW ALL", 2, showall_fn},		//2
+	{"SORT", 1, sort_fn},				//3
+	{"DELETE", 1, delete_fn},			//4
+	{"UNDO", 1, undo_fn},				//5
+	{"SHOW SUMMARY", 2, summary_fn},	//6
+	{"UPDATE", 1, update_fn},			//7
+	{"INSERT", 1, insert_fn},			//8
+	{"QUERY", 1, query_fn},				//9
+	{"SAVE", 1, save_fn},				//10
+	{"NEW FILE",2, newfile_fn},			//11
+	{"HELP", 1, help_fn}				//12
 };
 
 // handles the execution of operation based on user input command
@@ -1194,7 +1327,7 @@ bool run_command(char command[]) {
 	}
 
 	if (!command_found) {
-		printf("Command %s not recognised. Please try again.\n", command);
+		printf("Command %s not recognised. You may use \"help\" to receive a list of available commands.\n", command);
 	}
 
 	free(command_copy);

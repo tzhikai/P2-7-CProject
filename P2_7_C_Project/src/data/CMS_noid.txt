@@ -1,0 +1,8 @@
+Database Name: Test_CMS
+Authors: Datta Bays
+
+Table Name: StudentRecords
+Name		Programme		Mark
+John Souls	Software Engineering	70.5
+Lenny Ovo	Computer Science	63.4
+Artie Ex	Digital Supply Chain	85.9
