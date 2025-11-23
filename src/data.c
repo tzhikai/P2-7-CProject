@@ -145,7 +145,7 @@ void validate_name(char* name, int row_number) {
 
 	// this is last in case name is all invalid chars (eg !@#) and becomes empty
 	if (strlen(name) == 0) {
-		strcpy_s(name, sizeof(name), "N/A");
+		strncpy_s(name, sizeof(name), "N/A", _TRUNCATE);
 		printf("Row %d, %s contains no valid characters.\n", row_number, name_copy);
 	}
 	free(name_copy);
@@ -165,7 +165,7 @@ void validate_programme(char* programme, int row_number) {
 		}
 	}
 	if (!programme_matched) {
-		strcpy_s(programme, sizeof(programme), "N/A");
+		strncpy_s(programme, sizeof(programme), "N/A", _TRUNCATE);
 		printf("Row %d, programme is not valid.\n", row_number);
 	}
 }
@@ -204,7 +204,7 @@ void recalc_col_widths(struct Database* StudentDB, struct Student* recordAdded, 
 int parse_headers(char* header_line, struct Database* StudentDB) {
 	clean_input(header_line);
 	char header_line_copy[50];
-	strcpy_s(header_line_copy, strlen(header_line) + 1, header_line);
+	strncpy_s(header_line_copy, strlen(header_line) + 1, header_line, _TRUNCATE);
 
 	int id_found = 0;
 	int column_count = 0;
@@ -250,7 +250,7 @@ int parse_headers(char* header_line, struct Database* StudentDB) {
 
 		// hold on to column headers from input file for printing later
 		//StudentDB->columns[column_count].header_name = malloc(strlen(header) + 1);	// allocate memory for each column name in header_line
-		strcpy_s(StudentDB->columns[column_count].header_name, strlen(header) + 1, header);
+		strncpy_s(StudentDB->columns[column_count].header_name, strlen(header) + 1, header, _TRUNCATE);
 
 		// store header width for deciding no. of spaces to print (will increase if any datapoints are longer)
 		StudentDB->columns[column_count].max_width = strlen(header);
@@ -303,7 +303,7 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 
 	// loop thru to test id validity
 	char dataline_copy[255];
-	strcpy_s(dataline_copy, sizeof(dataline_copy), data_line);
+	strncpy_s(dataline_copy, sizeof(dataline_copy), data_line, _TRUNCATE);
 	for (datapoint = strtok_s(dataline_copy, "\t", &context);
 		datapoint != NULL;
 		datapoint = strtok_s(NULL, "\t", &context))
@@ -342,12 +342,12 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 				break;
 			case COL_NAME:
 				validate_name(datapoint, row_number);	// proper capitalisation, removes duped spaces
-				strcpy_s(current_student->name, strlen(datapoint) + 1, datapoint);
+				strncpy_s(current_student->name, strlen(datapoint) + 1, datapoint, _TRUNCATE);
 				break;
 			case COL_PROGRAMME:
 				validate_name(datapoint, row_number);	// proper capitalisation, remove duped spaces as well (zktodo: change name)
 				validate_programme(datapoint, row_number);
-				strcpy_s(current_student->programme, strlen(datapoint) + 1, datapoint);
+				strncpy_s(current_student->programme, strlen(datapoint) + 1, datapoint, _TRUNCATE);
 				break;
 			case COL_MARK:
 				current_student->mark = validate_mark(datapoint, row_number);
@@ -493,7 +493,7 @@ struct ColumnMap* cpyColumnMap(const struct ColumnMap* src, int count) {
 
 	for (int i = 0; i < count; i++) {
 		dest[i].column_id = src[i].column_id;
-		strcpy_s(dest[i].header_name, sizeof(src->header_name), src[i].header_name);
+		strncpy_s(dest[i].header_name, sizeof(src->header_name), src[i].header_name, _TRUNCATE);
 		dest[i].max_width = src[i].max_width;
 	}
 	return dest;
@@ -504,10 +504,10 @@ struct Database* cpyDatabaseDetails(const struct Database* src, struct Database*
 		if (src == NULL || dest == NULL) {
 		return NULL;
 	}
-	strcpy_s(dest->databaseName, sizeof(dest->databaseName), src->databaseName);
-	strcpy_s(dest->authors, sizeof(dest->authors), src->authors);
-	strcpy_s(dest->tableName, sizeof(dest->tableName), src->tableName);
-	strcpy_s(dest->filepath, sizeof(dest->filepath), src->filepath);
+	strncpy_s(dest->databaseName, sizeof(dest->databaseName), src->databaseName, _TRUNCATE);
+	strncpy_s(dest->authors, sizeof(dest->authors), src->authors, _TRUNCATE);
+	strncpy_s(dest->tableName, sizeof(dest->tableName), src->tableName, _TRUNCATE);
+	strncpy_s(dest->filepath, sizeof(dest->filepath), src->filepath, _TRUNCATE);
 	dest->capacity = src->capacity;
 	dest->column_count = src->column_count;
 	dest->columns = cpyColumnMap(src->columns, src->column_count);
@@ -527,8 +527,14 @@ bool add_student(struct Student newStudent) {
 		return false;
 	}
 
+	if (db->StudentRecord == NULL) {
+		printf("Student Records is NULL.\n");
+		return false;
+	}
+
 	// Expand array if capacity reached
-	if (db->size >= db->capacity) {
+	//if (db->size >= db->capacity) {
+	if ((db->size + 1) >= db->capacity) {
 		int newCapacity = db->capacity * 2;
 		struct Student* resized = realloc(db->StudentRecord, newCapacity * sizeof(struct Student));
 		if (resized == NULL) {
@@ -556,15 +562,15 @@ void query_student(const char* keyword) {
 	}
 
 	char lowered[100];
-	strcpy_s(lowered, sizeof(lowered), keyword);
+	strncpy_s(lowered, sizeof(lowered), keyword, _TRUNCATE);
 	for (int i = 0; lowered[i]; i++) lowered[i] = tolower(lowered[i]);
 
 	bool found = false;
 
 	for (int i = 0; i < db->size; i++) {
 		char name[100], programme[100];
-		strcpy_s(name, sizeof(name), db->StudentRecord[i].name);
-		strcpy_s(programme, sizeof(programme), db->StudentRecord[i].programme);
+		strncpy_s(name, sizeof(name), db->StudentRecord[i].name, _TRUNCATE);
+		strncpy_s(programme, sizeof(programme), db->StudentRecord[i].programme, _TRUNCATE);
 		for (int j = 0; name[j]; j++) name[j] = tolower(name[j]);
 		for (int j = 0; programme[j]; j++) programme[j] = tolower(programme[j]);
 

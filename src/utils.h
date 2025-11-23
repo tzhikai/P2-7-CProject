@@ -14,6 +14,8 @@ struct HeaderValuePair {
 	char datapoint[50];
 };
 
+int get_column(Columns col_id, struct Database* StudentDB);
+
 int extract_extrainput_id(
 	int* id_ptr,
 	char* extrainput,
@@ -35,11 +37,13 @@ struct UndoStack {
 	char commands[MAX_UNDOS][MAX_CMD_LENGTH];
 	int oldest;
 	int cmd_count;
+	bool pause_inserts;	// without this, all the commands run during undo add themselves to the undo stack (and then it undoes the undo)
 };
 
 void set_undostack(struct UndoStack* undos);
 struct UndoStack* get_undostack();
 void insert_undostack(char* command);
 bool use_undostack(char* retrieved_command);
+bool preview_undostack(int preview_num);
 
-#endif // !INPUT_H
+#endif // !UTILS_H

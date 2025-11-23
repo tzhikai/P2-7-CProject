@@ -47,13 +47,13 @@ bool open_fn(char* context) {
 
 		for (int i = 0; i < loop_amt; i++) {
 			char filepath_ext[250];	//zktodo: use snprintf?
-			strcpy_s(filepath_ext, sizeof(filepath_ext), filepath);
+			strncpy_s(filepath_ext, sizeof(filepath_ext), filepath, _TRUNCATE);
 			strcat_s(filepath_ext, sizeof(filepath_ext), extensions[i]);
 			fopen_s(&file_ptr, filepath_ext, "r");
 
 			if (file_ptr != NULL) {
 				printf("Missing extension, found %s instead\n", filepath_ext);
-				strcpy_s(filepath, sizeof(filepath), filepath_ext);	// update filepath for the printf
+				strncpy_s(filepath, sizeof(filepath), filepath_ext, _TRUNCATE);	// update filepath for the printf
 				break;
 			}
 		}
@@ -73,7 +73,7 @@ bool open_fn(char* context) {
 		return false;
 	}
 
-	strcpy_s(StudentDB->filepath, sizeof(StudentDB->filepath), filepath);	// store filepath for save fn
+	strncpy_s(StudentDB->filepath, sizeof(StudentDB->filepath), filepath, _TRUNCATE);	// store filepath for save fn
 
 	set_database(StudentDB);	// store in static var for access from other functions
 	return true;
@@ -177,14 +177,14 @@ bool delete_fn(char* context) {
 	if (context != NULL && context[0] != '\0') {
 		clean_input(context);
 		strncpy_s(idbuffer, sizeof(idbuffer), context, _TRUNCATE);
-		printf("User gave ID to delete: %s\n", idbuffer);
+		//printf("User gave ID to delete: %s\n", idbuffer);
 	}
 
 	int deleting = 1;
 	while (deleting == 1) {
 		struct Database* StudentDB = get_database(); // Initialize existing struct Student Database
 
-		if (StudentDB == NULL) {
+		if (StudentDB == NULL || StudentDB->size == 0) {
 			printf("\nNo records in database.");
 			break;
 		}
@@ -194,20 +194,6 @@ bool delete_fn(char* context) {
 			fgets(idbuffer, sizeof(idbuffer), stdin);
 			clean_input(idbuffer); //Accept id as string for cleanup
 		}
-
-		//for (int i = 0; i < StudentDB->size; i++) {	
-		//	if (validate_id(idbuffer, i, StudentDB) == 1) {
-		//		printf("\nPlease enter a valid ID");
-		//		continue;
-		//	}
-		//}
-
-		//zkchange: i made this make sense (altho this 0 1 2 system is not ideal)
-		//if (validate_id(idbuffer, 0, StudentDB) < 2) {	// 0 = valid, unused id; 1 = invalid id; 2 = valid, duplicate id
-		//	printf("\nPlease enter a valid ID");
-		//	idbuffer[0] = '\0'; // prompts fgets again to ask user for id again
-		//	continue;
-		//}
 
 		switch (validate_id(idbuffer, 0, StudentDB)) {
 			case 1:	// ID is invalid
@@ -225,17 +211,6 @@ bool delete_fn(char* context) {
 
 		int iddelete = atoi(idbuffer); //Convert string to int, if string is not integer, atoi returns 0
 
-		/*
-		int count = countid(iddelete); //Counts digits in userinput, if input is 0 (or atoi returns 0)
-		//printf("\ncount: %d", count);
-
-		//if digit is less/more than 7, invalid id
-		if (count != 7) {
-			printf("\nPlease enter a valid ID");
-			continue;
-		}
-		*/
-
 		struct Student* record = StudentDB->StudentRecord; // Initialize record pointer for easier writing
 
 		int cnfmdeleting = 0; // Initialize cnfmdeleting to enter confirmation loop if ID to delete exists
@@ -252,73 +227,149 @@ bool delete_fn(char* context) {
 			printf("\nFound record ID=%d at index %d\n", iddelete, indexdelete);
 			cnfmdeleting = 1; //Starts confirmation loop
 		}
-			
-		// Checks record.id if it matches userinput iddelete
-		//for (int i = 0; i < StudentDB->size; i++) {
-		//	if (record[i].id == iddelete) {
-		//		printf("\nFound record ID=%d at Index=%d", iddelete, i); //Debug
-		//		indexdelete = i;
-		//		cnfmdeleting = 1; //Starts confirmation loop
-		//		break;
-		//	}
-		//}
-		
-		//// ID to delete does not exist
-		//if (indexdelete == -1) {
-		//	printf("\nThe record with ID=%d does not exist\n", iddelete); //Debug
-		//	deleting = 0;
-		//	break;
-		//}
 
 		// Confirmation loop
 		while (cnfmdeleting == 1) {
-			printf("\nAre you sure you want to delete record with ID=%d?\nType \"Y\" to Confirm or type \"N\" to Cancel: ", iddelete);
-			fgets(cnfm, sizeof(cnfm), stdin);
-			clean_input(cnfm);
+			struct UndoStack* undos = get_undostack();
+			if (!undos->pause_inserts) {
+				printf("\nAre you sure you want to delete record with ID=%d?\nType \"Y\" to Confirm or type \"N\" to Cancel: ", iddelete);
+				fgets(cnfm, sizeof(cnfm), stdin);
+				clean_input(cnfm);
+			}
+			else {	// if DELETE is run during UNDO, then dont bother asking (alr asked within undo_fn)
+				strncpy_s(cnfm, sizeof(cnfm), "y", _TRUNCATE);
+			}
+			
 
 			//printf("\nSize of Original Database: %d", StudentDB->size);
 			//printf("\nSize of New Database: %d", NEWdb->size);
 
 			// Yes confirmation
 			if (_stricmp(cnfm, "y") == 0) {
+				char temp_mark_str[10];
+				struct ColumnMap* cols = StudentDB->columns;
+
+				char undo_command[100] = "INSERT ID=";
+				snprintf(undo_command, sizeof(undo_command), "INSERT ID=%d", iddelete);
+				for (int i = 0; i < StudentDB->column_count; i++) {
+					// ID is alr inserted first (since it has to be first), unexpected cols are ignored
+					if (cols[i].column_id == COL_ID || cols[i].column_id == COL_OTHER) {
+						continue;
+					}
+					strncat_s(undo_command, sizeof(undo_command), " ", _TRUNCATE);
+					strncat_s(undo_command, sizeof(undo_command), cols[i].header_name, _TRUNCATE);
+					strncat_s(undo_command, sizeof(undo_command), "=", _TRUNCATE);
+					
+					switch (cols[i].column_id) {
+					case COL_NAME:
+						strncat_s(undo_command, sizeof(undo_command), StudentDB->StudentRecord[indexdelete].name, _TRUNCATE);
+						break;
+					case COL_PROGRAMME:
+						strncat_s(undo_command, sizeof(undo_command), StudentDB->StudentRecord[indexdelete].programme, _TRUNCATE);
+						break;
+					case COL_MARK:
+						snprintf(temp_mark_str, sizeof(temp_mark_str), "%.1f", StudentDB->StudentRecord[indexdelete].mark);
+
+						strncat_s(undo_command, sizeof(undo_command), temp_mark_str, _TRUNCATE);
+						break;
+					}
+					
+				}
 
 				/*
 				for (int i = indexdelete; i < StudentDB->size; i++) {
 					StudentDB->StudentRecord[i] = StudentDB->StudentRecord[i + 1];
 				}
 				*/
-
-				struct Database* NEWdb = malloc(sizeof(struct Database)); //Initialize NEWdb to copy old database excluding deleted record
-				
+				//zkstart
+				 
+				struct Database* NEWdb = malloc(sizeof(struct Database));
 				if (NEWdb == NULL) {
-					printf("\nMemory alocation for new database failed.");
-					break;
+					printf("\nMemory allocation for new database failed.");
+					return false;
 				}
-				
-				NEWdb = cpyDatabaseDetails(StudentDB, NEWdb); // Refer to 'jaison addition' in data.c & data.h
-				
-				NEWdb->StudentRecord = malloc(sizeof(struct Student) * (StudentDB->size - 1));
+
+				// Initialize NEWdb properly
+				memset(NEWdb, 0, sizeof(struct Database));
+
+				// Copy basic details (don't use the flawed cpyDatabaseDetails)
+				strncpy_s(NEWdb->databaseName, sizeof(NEWdb->databaseName),
+					StudentDB->databaseName, _TRUNCATE);
+				strncpy_s(NEWdb->authors, sizeof(NEWdb->authors),
+					StudentDB->authors, _TRUNCATE);
+				strncpy_s(NEWdb->tableName, sizeof(NEWdb->tableName),
+					StudentDB->tableName, _TRUNCATE);
+				strncpy_s(NEWdb->filepath, sizeof(NEWdb->filepath),
+					StudentDB->filepath, _TRUNCATE);
+
+				NEWdb->column_count = StudentDB->column_count;
 				NEWdb->size = StudentDB->size - 1;
-				int newindex = 0;
-				
-				
+				NEWdb->capacity = NEWdb->size > 0 ? NEWdb->size : 1; // Ensure at least capacity 1
 
-				struct Student* NEWrecord = NEWdb->StudentRecord;
-
-				if (NEWrecord == NULL) {
-					printf("NEWrecord Memory allocation for StudentRecord failed.\n");
-					break;
+				// Allocate columns
+				NEWdb->columns = malloc(sizeof(struct ColumnMap) * StudentDB->column_count);
+				if (NEWdb->columns == NULL) {
+					printf("Memory allocation for columns failed.\n");
+					free(NEWdb);
+					return false;
 				}
-				
-				for (int i = 0; i < StudentDB->size; i++) {
-					//printf("\nChecking Index %d\n", i); //Debug
-					if (i == indexdelete) {
-						//printf("\nSkipping Index %d\n", i); //Debug
-						continue;
+				memcpy(NEWdb->columns, StudentDB->columns,
+					sizeof(struct ColumnMap) * StudentDB->column_count);
+
+				// Allocate student records - CRITICAL FIX: handle size-1 = 0 case
+				if (NEWdb->size > 0) {
+					NEWdb->StudentRecord = malloc(sizeof(struct Student) * NEWdb->size);
+					if (NEWdb->StudentRecord == NULL) {
+						printf("Memory allocation for StudentRecord failed.\n");
+						free(NEWdb->columns);
+						free(NEWdb);
+						return false;
 					}
-					NEWrecord[newindex] = record[i];
-					newindex++;
+
+					// Copy records, skipping the deleted one
+					int newindex = 0;
+					for (int i = 0; i < StudentDB->size; i++) {
+						if (i == indexdelete) continue;
+						NEWdb->StudentRecord[newindex++] = StudentDB->StudentRecord[i];
+					}
 				}
+				else {
+					// Handle case when deleting the last record
+					NEWdb->StudentRecord = NULL;
+				}
+				 
+				//struct Database* NEWdb = malloc(sizeof(struct Database)); //Initialize NEWdb to copy old database excluding deleted record
+				//
+				//if (NEWdb == NULL) {
+				//	printf("\nMemory alocation for new database failed.");
+				//	return false;
+				//}
+				//
+				//NEWdb = cpyDatabaseDetails(StudentDB, NEWdb); // Refer to 'jaison addition' in data.c & data.h
+				//
+				//NEWdb->StudentRecord = malloc(sizeof(struct Student) * (StudentDB->size - 1));
+				//NEWdb->size = StudentDB->size - 1;
+				//int newindex = 0;
+				//
+				//
+
+				//struct Student* NEWrecord = NEWdb->StudentRecord;
+
+				//if (NEWrecord == NULL) {
+				//	printf("NEWrecord Memory allocation for StudentRecord failed.\n");
+				//	free(NEWdb);
+				//	return false;
+				//}
+				//
+				//for (int i = 0; i < StudentDB->size; i++) {
+				//	//printf("\nChecking Index %d\n", i); //Debug
+				//	if (i == indexdelete) {
+				//		//printf("\nSkipping Index %d\n", i); //Debug
+				//		continue;
+				//	}
+				//	NEWrecord[newindex] = record[i];
+				//	newindex++;
+				//}
 
 				/* Debug NEWrecord
 				printf("\nNew StudentRecord\n");
@@ -331,19 +382,22 @@ bool delete_fn(char* context) {
 				}
 				*/
 
+				free_database(StudentDB);
 				set_database(NEWdb);
 				
-				free(record);
-				free(StudentDB->columns);
-				free(StudentDB);
+				
 
 				struct Database* db = get_database();
-				update_width(db, indexdelete, WIDTH_DELETE);
+				if (NEWdb->size > 0) {	// doesnt run if theres no records after deleting
+					update_width(db, indexdelete, WIDTH_DELETE);
+				}
 
 				printf("\nThe record with ID=%d is successfully deleted\n", iddelete);
 				cnfmdeleting = 0;
 				deleting = 0;
-				insert_undostack("test_insert_undo");
+
+				insert_undostack(undo_command);
+
 				return true;
 			}
 			else if (_stricmp(cnfm, "n") == 0) {
@@ -490,8 +544,21 @@ bool sort_fn(char* context) {
 }
 
 bool undo_fn(char* context){
-	clean_input(context);
+	struct Database* StudentDB = get_database(); //struct Student and function get_database() is in data.c
+	//int student_count = studentcount(); Old code 
 
+	if (StudentDB == NULL) {
+		printf("No Student Records could be found. Please try using OPEN.\n");
+		return false;
+	}
+
+	struct UndoStack* undos = get_undostack();
+	if (undos == NULL) {
+		printf("UndoStack not created yet.\n");
+		return false;
+	}
+
+	clean_input(context);
 	int undo_count = 1;
 
 	// decide how many undos to do
@@ -507,21 +574,77 @@ bool undo_fn(char* context){
 		undo_count = atoi(context);
 	}
 
+	if (undo_count < 0) {
+		printf("Invalid undo amount. Use between 1 and %d\n", MAX_UNDOS);
+		return false;
+	}
+	
+	int undo_limit;
+	if (undos->cmd_count < MAX_UNDOS) {
+		undo_limit = undos->cmd_count;
+	}
+	else {
+		undo_limit = MAX_UNDOS;
+	}
+
+	if (undo_count > undos->cmd_count) {
+		printf("Undo amount exceeds available amount, which is %d. Capping at %d...\n", undo_limit, undo_limit);
+		undo_count = undo_limit;
+	}
+
 	char buffer[255];
+	char yn_buffer[10];
+
+	printf("Here are the commands that will be run. Starting from most recent...\n");
+
+	for (int i = 0; i < undo_count; i++) {
+		//printf("debug: loop no. %d\n", i);
+		if (!preview_undostack(i)) {
+			printf("Error previewing undos in undostack.\n");
+			return false;
+		}
+	}
+
+	printf("Are you sure? (Y/N): ");
+	fgets(yn_buffer, sizeof(yn_buffer), stdin);
+	clean_input(yn_buffer);
+	printf("\n");
+
+	if (_stricmp(yn_buffer, "n") == 0) {
+		printf("Cancelling undo.\n");
+		return false;
+	}
+
+	undos->pause_inserts = true;	// pause inserting only when we actually start running them
+
 	while (undo_count > 0) {
-		printf("Performing %d to last undo \n", undo_count);
+		switch (undo_count) {
+		case 1:
+			printf("Performing final undo...\n");
+			break;
+		case 2:
+			printf("Performing 2nd to last undo...\n");
+			break;
+		case 3:
+			printf("Performing 3rd to last undo...\n");
+			break;
+		default:	// hopefully its not 21 22 23
+			printf("Performing %dth to last undo...\n", undo_count);
+			break;
+		}
 
 		if (!use_undostack(buffer)) {
 			printf("Error running undo function.\n");
 			return false;
 		}
 
-		printf("Undo command to run: %s\n", buffer);
+		//printf("Undo command to run: %s\n", buffer);
 		run_command(buffer);
 
 		undo_count--;
 	}
 
+	undos->pause_inserts = false;	//revert back to allow INSERT, DELETE, UPDATE to insert_undostack
 	return true;
 }
 
@@ -635,7 +758,8 @@ bool update_fn(char* context) {
 	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
 		s->id, s->name, s->programme, s->mark);
 
-	char undo_fields[100] = "";
+	char undo_fields_all[100] = "";
+	
 
 	if (hvpair_count > 0) {
 		//struct HeaderValuePair* hvarray = get_hvarray();
@@ -646,25 +770,42 @@ bool update_fn(char* context) {
 		}
 
 		for (int i = 0; i < hvpair_count; i++) {
+			char og_data[50] = "";
 			//printf("Header: %d\n Value: %s\n", hvp_array[i].column_id, hvp_array[i].datapoint);
-			if (hvp_array[i].column_id != COL_OTHER) {
-				//snprintf(undo_fields, sizeof(undo_fields), "%s %s=%s", undo_fields, ,);
-			}
 		
 			switch (hvp_array[i].column_id) {
 				case COL_ID:
+					snprintf(og_data, sizeof(og_data), "=%d", s->id);
 					s->id = atoi(hvp_array[i].datapoint);
 					break;
 				case COL_NAME:
-					strcpy_s(s->name, sizeof(s->name), hvp_array[i].datapoint);
+					snprintf(og_data, sizeof(og_data), "=%s", s->name);
+					strncpy_s(s->name, sizeof(s->name), hvp_array[i].datapoint, _TRUNCATE);
 					break;
 				case COL_PROGRAMME:
-					strcpy_s(s->programme, sizeof(s->programme), hvp_array[i].datapoint);
+					snprintf(og_data, sizeof(og_data), "=%s", s->programme);
+					strncpy_s(s->programme, sizeof(s->programme), hvp_array[i].datapoint, _TRUNCATE);
 					break;
 				case COL_MARK:
+					snprintf(og_data, sizeof(og_data), "=%.1f", s->mark);
 					s->mark = atof(hvp_array[i].datapoint);
 					break;
 			}
+
+			if (hvp_array[i].column_id != COL_OTHER) {
+				int col_index = get_column(hvp_array[i].column_id, db);
+
+				// this adds a space before the next field
+				strncat_s(undo_fields_all, sizeof(undo_fields_all), " ", _TRUNCATE);
+
+				// eg concat Mark=23.4
+				strncat_s(undo_fields_all, sizeof(undo_fields_all), db->columns[col_index].header_name, _TRUNCATE);
+				strncat_s(undo_fields_all, sizeof(undo_fields_all), og_data, _TRUNCATE);
+
+
+			}
+
+
 		}
 
 	}
@@ -690,13 +831,13 @@ bool update_fn(char* context) {
 
 			case COL_NAME:
 				validate_name(buf, idx); // your validate_name modifies buf in-place
-				strcpy_s(s->name, sizeof(s->name), buf);
+				strncpy_s(s->name, sizeof(s->name), buf, _TRUNCATE);
 				break;
 
 			case COL_PROGRAMME:
 				validate_name(buf, idx); // capitalize properly
 				validate_programme(buf, idx); // ensure valid programme
-				strcpy_s(s->programme, sizeof(s->programme), buf);
+				strncpy_s(s->programme, sizeof(s->programme), buf, _TRUNCATE);
 				break;
 
 			case COL_MARK: {
@@ -720,7 +861,7 @@ bool update_fn(char* context) {
 	update_width(db, idx, WIDTH_UPDATE);
 
 	char undo_command[100];
-	snprintf(undo_command, sizeof(undo_command), "UPDATE ID=%d%s", id, undo_fields);
+	snprintf(undo_command, sizeof(undo_command), "UPDATE ID=%d%s", id, undo_fields_all);
 
 	insert_undostack(undo_command);
 
@@ -770,10 +911,9 @@ bool insert_fn(char* context) {
 	newStudent.id = id;
 
 	if (hvpair_count > 0) {
-		printf("handle using oneline\n");
 
 		if (hvp_array == NULL) {
-			printf("NULL HVARRAY\n");
+			printf("No Header-Value Pair array found\n");
 			return false;
 		}
 
@@ -784,10 +924,10 @@ bool insert_fn(char* context) {
 			case COL_ID:	// ID is calculated before the rest of the fields and so isnt in this array
 				break;
 			case COL_NAME:
-				strcpy_s(newStudent.name, sizeof(newStudent.name), hvp_array[i].datapoint);
+				strncpy_s(newStudent.name, sizeof(newStudent.name), hvp_array[i].datapoint, _TRUNCATE);
 				break;
 			case COL_PROGRAMME:
-				strcpy_s(newStudent.programme, sizeof(newStudent.programme), hvp_array[i].datapoint);
+				strncpy_s(newStudent.programme, sizeof(newStudent.programme), hvp_array[i].datapoint, _TRUNCATE);
 				break;
 			case COL_MARK:
 				newStudent.mark = atof(hvp_array[i].datapoint);
@@ -833,10 +973,10 @@ bool insert_fn(char* context) {
 				validate_name(buf, -1);
 				if (col == COL_PROGRAMME) {
 					validate_programme(buf, -1);
-					strcpy_s(newStudent.programme, sizeof(newStudent.programme), buf);
+					strncpy_s(newStudent.programme, sizeof(newStudent.programme), buf, _TRUNCATE);
 					break;
 				}
-				strcpy_s(newStudent.name, sizeof(newStudent.name), buf);
+				strncpy_s(newStudent.name, sizeof(newStudent.name), buf, _TRUNCATE);
 				break;
 				
 			}
@@ -844,7 +984,11 @@ bool insert_fn(char* context) {
 		}
 	}
 
-	add_student(newStudent);
+	if (!add_student(newStudent)) {
+		printf("CMS: Failed to insert student into database.\n");
+		return false;
+	}
+
 	update_width(db, db->size - 1, WIDTH_INSERT);
 
 	char undo_command[100];
@@ -876,7 +1020,7 @@ bool query_fn(char* context) {
 	}
 
 	char keyword[100];
-	strcpy_s(keyword, sizeof(keyword), context);
+	strncpy_s(keyword, sizeof(keyword), context, _TRUNCATE);
 	for (int i = 0; keyword[i]; i++) keyword[i] = tolower(keyword[i]);
 
 	bool found = false;
@@ -884,8 +1028,8 @@ bool query_fn(char* context) {
 
 	for (int i = 0; i < db->size; i++) {
 		char name[100], programme[100];
-		strcpy_s(name, sizeof(name), db->StudentRecord[i].name);
-		strcpy_s(programme, sizeof(programme), db->StudentRecord[i].programme);
+		strncpy_s(name, sizeof(name), db->StudentRecord[i].name, _TRUNCATE);
+		strncpy_s(programme, sizeof(programme), db->StudentRecord[i].programme, _TRUNCATE);
 		for (int j = 0; name[j]; j++) name[j] = tolower(name[j]);
 		for (int j = 0; programme[j]; j++) programme[j] = tolower(programme[j]);
 
@@ -970,12 +1114,12 @@ void update_width(struct Database* db, int row_idx, WidthAction action) {
 		if (action != WIDTH_DELETE && row_idx < db->size) {
 			row_len = get_student_field_len(&db->StudentRecord[row_idx], col);
 		}
-		printf("[DEBUG] Column %d (%s): old_width=%d, row_len=%d\n",
-			i, col->header_name, old_width, row_len);
+		////printf("[DEBUG] Column %d (%s): old_width=%d, row_len=%d\n",
+		//	i, col->header_name, old_width, row_len);
 		if (action == WIDTH_INSERT) {
 			if (row_len > col->max_width)
 				col->max_width = row_len;
-			printf("[DEBUG] New width after INSERT: %d\n", col->max_width);
+			//printf("[DEBUG] New width after INSERT: %d\n", col->max_width);
 		}
 		else if (action == WIDTH_UPDATE) {
 			if (row_len > col->max_width) {
@@ -984,11 +1128,11 @@ void update_width(struct Database* db, int row_idx, WidthAction action) {
 			else if (old_width == col->max_width) {
 				col->max_width = recalc_column_max(db, col);
 			}
-			printf("[DEBUG] New width after UPDATE: %d\n", col->max_width);
+			//printf("[DEBUG] New width after UPDATE: %d\n", col->max_width);
 		}
 		else if (action == WIDTH_DELETE) {
 			col->max_width = recalc_column_max(db, col);
-			printf("[DEBUG] New width after DELETE: %d\n", col->max_width);
+			//printf("[DEBUG] New width after DELETE: %d\n", col->max_width);
 		}
 	}
 }

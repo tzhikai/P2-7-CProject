@@ -71,6 +71,23 @@ void join_words(char input[]) {
 
 }
 
+// loops thru ColumnMap within StudentDB to find the index within column array from col_id like COL_MARK
+int get_column(Columns col_id, struct Database* StudentDB) {
+
+	if (StudentDB == NULL || StudentDB->columns == NULL) {
+		return -1;
+	}
+
+	struct ColumnMap *cols = StudentDB->columns;
+
+	for (int col_index = 0; col_index < StudentDB->column_count; col_index++) {
+		if (cols[col_index].column_id == col_id) {
+			return col_index;
+		}
+	}
+
+	return -1;
+}
 
 int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* StudentDB, struct HeaderValuePair* hvp_array, bool is_new) {
 	if (extrainput == NULL || extrainput[0] == '\0') {
@@ -84,11 +101,11 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 	if (extrainput != NULL && extrainput[0] != '\0') {
 		char input_copy[100];
 		
-		errno_t result = strcpy_s(input_copy, sizeof(input_copy), extrainput);
+		errno_t result = strncpy_s(input_copy, sizeof(input_copy), extrainput, _TRUNCATE);
 
 
 
-		printf("context first: %s\n", input_copy);
+		//printf("context first: %s\n", input_copy);
 		// correct would be UPDATE ID=<value>, this could mean UPDATE 2500123
 		if (strchr(input_copy, '=') == NULL) {
 			printf("Extra input invalid. Use <field>=<value>\n");
@@ -105,7 +122,7 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 			return 0;
 		}
 		else {
-			printf("trial last\n");
+			//printf("trial last\n");
 			// able to split by string here because it is for ID, which is 7 consecutive digits only
 			cmd_ptr = strtok_s(NULL, " ", &context);
 			clean_input(cmd_ptr);
@@ -118,7 +135,7 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 				case 0:	// valid id, unused
 					if (is_new) {	// is this used for INSERT?
 						*id_ptr = atoi(cmd_ptr);
-						printf("ID %s found, now is %d.\n", cmd_ptr, *id_ptr);
+						//printf("ID %s found, now is %d.\n", cmd_ptr, *id_ptr);
 						break;
 					}
 					printf("Extra input invalid. ID not found.\n");
@@ -136,13 +153,13 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 		}
 	}
 	else {
-		printf("initial extrainput is NULL\n");
+		//printf("initial extrainput is NULL\n");
 		return 0;
 	}
 
 
 	if (cmd_ptr == NULL) {
-		printf("post loop is NULL\n");
+		//printf("post loop is NULL\n");
 		return 0;
 	}
 	
@@ -156,7 +173,7 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 	else {
 		remaining += strlen(cmd_ptr);	// move past id
 	}
-	printf("Remaning string: %s\n", remaining);
+	//printf("Remaning string: %s\n", remaining);
 
 	int hvp_count = 0;
 	//struct HeaderValuePair* hvp_array = NULL;
@@ -170,7 +187,7 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 
 	
 	hvp_count = extract_extrainput_values(hvp_array, remaining, StudentDB);
-	printf("hvp_count = %d\n", hvp_count);
+	//printf("hvp_count = %d\n", hvp_count);
 	return hvp_count;
 
 }
@@ -180,16 +197,16 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 	// find = to get Mark, then check for = to see if theres another header, if not then rest is value, if so then remove everything after the last space
 
 	if (extrainput == NULL) {
-		printf("no extra input\n");
+		//printf("no extra input\n");
 		return 0;
 	}
 	else {
 		clean_input(extrainput);
-		printf("values input: %s\n", extrainput);
+		//printf("values input: %s\n", extrainput);
 	}
 
 	char input_copy[100];
-	strcpy_s(input_copy, sizeof(input_copy), extrainput);
+	strncpy_s(input_copy, sizeof(input_copy), extrainput, _TRUNCATE);
 
 	int pair_count = 0;
 	char header[20], value[50];
@@ -200,12 +217,12 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 	int value_flag = 0, invalid_flag = 0;
 
 	while (extra_ptr != NULL) {
-		printf("handling %s rn\n", extra_ptr);
+		//printf("handling %s rn\n", extra_ptr);
 		char* equal_ptr = strchr(extra_ptr, '=');	// finds = in word, if exists
 
 		if (equal_ptr != NULL) {	// if = means its a header=value pair, if no = means its a continued value
 			// means we were previously handling a pair, so now can save this and move on
-			printf("pointer %s has an equals\n", extra_ptr);
+			//printf("pointer %s has an equals\n", extra_ptr);
 			if (value_flag) {
 				clean_input(header);
 				clean_input(value);
@@ -235,16 +252,16 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 
 				if (col_id != COL_OTHER && !invalid_flag) {	// if excpected header
 					hvpair[pair_count].column_id = col_id;
-					strcpy_s(hvpair[pair_count].datapoint, sizeof(hvpair[pair_count].datapoint), value);
-					printf("Saving pair of %s = %s\n", header, value);
+					strncpy_s(hvpair[pair_count].datapoint, sizeof(hvpair[pair_count].datapoint), value, _TRUNCATE);
+					//printf("Saving pair of %s = %s\n", header, value);
 					pair_count++;
 				}
 			}
 
 			*equal_ptr = '\0';	// splits string into 2 parts, header and value
-			strcpy_s(header, sizeof(header), extra_ptr); // header is before the =
+			strncpy_s(header, sizeof(header), extra_ptr, _TRUNCATE); // header is before the =
 			char* value_ptr = equal_ptr + 1; // value is after the =
-			strcpy_s(value, sizeof(value), value_ptr);
+			strncpy_s(value, sizeof(value), value_ptr, _TRUNCATE);
 			value_flag = 1;	// rmb that we are checking for continued values
 
 
@@ -271,8 +288,8 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 
 		if (col_id != COL_OTHER) {	// if excpected header
 			hvpair[pair_count].column_id = col_id;
-			strcpy_s(hvpair[pair_count].datapoint, sizeof(hvpair[pair_count].datapoint), value);
-			printf("Saving pair of %s = %s\n", header, value);
+			strncpy_s(hvpair[pair_count].datapoint, sizeof(hvpair[pair_count].datapoint), value, _TRUNCATE);
+			//printf("Saving pair of %s = %s\n", header, value);
 			pair_count++;
 		}
 	}
@@ -280,9 +297,9 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 	
 
 	//zkdebug
-	for (int i = 0; i < pair_count; i++) {
+	/*for (int i = 0; i < pair_count; i++) {
 		printf("Header: %d\n Value: %s\n", hvpair[i].column_id, hvpair[i].datapoint);
-	}
+	}*/
 
 
 	return pair_count;
@@ -297,7 +314,6 @@ void create_undostack() {
 		return;
 	}
 
-	printf("creating undostack\n");
 	/*UndoCmds = calloc(1, sizeof(struct UndoStack));
 	if (UndoCmds == NULL) {
 		printf("Memory allocation for UndoCmds failed.\n");
@@ -308,8 +324,7 @@ void create_undostack() {
 	UndoCmds = &UndoCmdsStatic;
 	UndoCmds->oldest = 0;
 	UndoCmds->cmd_count = 0;
-
-	printf("UndoStack created successfully\n");
+	UndoCmds->pause_inserts = false;
 
 	set_undostack(UndoCmds);
 }
@@ -324,17 +339,22 @@ void insert_undostack(char* command) {
 		return;
 	}
 
+	if (undos->pause_inserts) {
+		printf("Dont insert undo command into undostack.\n");
+		return;
+	}
+
 	// checking for empty commands (not likely)
 	if (command == NULL || command[0] == '\0') {
 		return;
 	}
 	// if not yet at max capacity, we can just add to empty slots
 	if (undos->cmd_count < MAX_UNDOS) {
-		strcpy_s(undos->commands[undos->cmd_count], MAX_CMD_LENGTH, command);
+		strncpy_s(undos->commands[undos->cmd_count], MAX_CMD_LENGTH, command, _TRUNCATE);
 		undos->cmd_count++;	//increment as we add (modding this value gives us the position to insert new undos)
 	}
 	else {	// if full, we override the oldest undo
-		strcpy_s(undos->commands[undos->oldest], MAX_CMD_LENGTH, command);
+		strncpy_s(undos->commands[undos->oldest], MAX_CMD_LENGTH, command, _TRUNCATE);
 		undos->oldest = (undos->oldest + 1) % MAX_UNDOS;	
 		// we use % MAX_UNDOS cuz if 5 is limit, and oldest is 5, then 5+1 is out of range, so we % to bring it to 1
 	}
@@ -356,7 +376,7 @@ bool use_undostack(char* retrieved_command) {
 
 	int undo_index = (undos->oldest + undos->cmd_count - 1) % MAX_UNDOS;
 	// edit the retrieved_command ptr so i can use it outside this and not have to run it here
-	strcpy_s(retrieved_command, MAX_CMD_LENGTH, undos->commands[undo_index]);
+	strncpy_s(retrieved_command, MAX_CMD_LENGTH, undos->commands[undo_index], _TRUNCATE);
 
 	undos->commands[undo_index][0] = '\0';	// we kill the used up command, not keeping it anymore
 
@@ -364,3 +384,25 @@ bool use_undostack(char* retrieved_command) {
 
 	return true;
 }
+
+bool preview_undostack(int preview_num) {
+	struct UndoStack* undos = get_undostack();
+	if (undos == NULL) {
+		//create_undostack();
+		printf("UndoStack not created yet or is NULL.\n");
+		return false;
+	}
+
+	if (preview_num < 0 || preview_num >= undos->cmd_count || preview_num >= MAX_UNDOS) {
+		//printf("debug: preview_num: %d, undos->cmd_count: %d, MAX_UNDOS: %d\n", preview_num, undos->cmd_count, MAX_UNDOS);
+		//printf("No more undos to preview.\n");
+		return false;
+	}
+
+	int preview_index = (undos->oldest + undos->cmd_count - 1 - preview_num) % MAX_UNDOS;
+
+	printf("UNDO %d: %s\n", preview_num+1, undos->commands[preview_index]);
+	
+	return true;
+}
+
