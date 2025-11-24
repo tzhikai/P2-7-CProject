@@ -712,6 +712,10 @@ bool undo_fn(char* context){
 		printf("Invalid undo amount. Use between 1 and %d\n", MAX_UNDOS);
 		return false;
 	}
+	if (undos->cmd_count == 0) {
+		printf("No undos available. Undos are added for every INSERT, UPDATE and DELETE.\n");
+		return false;
+	}
 	
 	int undo_limit;
 	if (undos->cmd_count < MAX_UNDOS) {
@@ -739,15 +743,18 @@ bool undo_fn(char* context){
 		}
 	}
 
-	printf("Are you sure? (Y/N): ");
-	fgets(yn_buffer, sizeof(yn_buffer), stdin);
-	clean_input(yn_buffer);
-	printf("\n");
+	do {
+		printf("Are you sure? (Y/N): ");
+		fgets(yn_buffer, sizeof(yn_buffer), stdin);
+		clean_input(yn_buffer);
+		printf("\n");
 
-	if (_stricmp(yn_buffer, "n") == 0) {
-		printf("Cancelling undo.\n");
-		return false;
-	}
+		if (_stricmp(yn_buffer, "n") == 0) {
+			printf("Cancelling undo.\n");
+			return false;
+		}
+	} while (_stricmp(yn_buffer, "y") != 0);
+
 
 	undos->pause_inserts = true;	// pause inserting only when we actually start running them
 
@@ -875,8 +882,6 @@ bool update_fn(char* context) {
 	if (id == 0) {
 		// ask for ID
 		char id_buffer[20];
-		
-
 		do {
 			printf("CMS: Enter the student ID to update: ");
 			fgets(id_buffer, sizeof(id_buffer), stdin);
@@ -895,6 +900,13 @@ bool update_fn(char* context) {
 			idx = id_search(id);
 
 		} while (idx == -1);
+	}
+	else {
+		idx = id_search(id);
+		if (idx == -1) {
+			printf("CMS: The record with ID \"%d\" does not exist. Please try again.\n", id);
+		}
+
 	}
 
 	struct Student* s = &db->StudentRecord[idx];
@@ -1156,12 +1168,8 @@ bool insert_fn(char* context) {
 				switch (col) {
 					case COL_MARK:
 						if (!(validate_mark(buf, -1, CMD_INSERT) < 0)) {	// -1.0 return means not validate mark
-							printf("valid\n");
 							newStudent.mark = atof(buf);
 							valid_input = 1;
-						}
-						else {
-							printf("invalid\n");
 						}
 						break;
 					case COL_NAME:

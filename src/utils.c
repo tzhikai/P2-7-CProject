@@ -222,7 +222,6 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 	
 	hvp_count = extract_extrainput_values(hvp_array, remaining, StudentDB, cmd);
 	//printf("hvp_count = %d\n", hvp_count);
-	printf("error testing %d", hvp_count);
 	return hvp_count;
 
 }
