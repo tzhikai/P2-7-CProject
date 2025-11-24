@@ -190,7 +190,7 @@ bool delete_fn(char* context) {
 		}
 		
 		if (idbuffer[0] == '\0') {	// means user just typed DELETE, no id initially given
-			printf("\nID to Delete: ");
+			printf("ID to Delete: \n");
 			fgets(idbuffer, sizeof(idbuffer), stdin);
 			clean_input(idbuffer); //Accept id as string for cleanup
 		}
@@ -219,12 +219,12 @@ bool delete_fn(char* context) {
 		int indexdelete = id_search(iddelete);	//zkchange i made this a fn 
 
 		if (indexdelete == -1) {
-			printf("\nThe record with ID=%d does not exist\n", iddelete); //Debug
+			printf("\nThe student record with ID=%d does not exist\n", iddelete); //Debug
 			deleting = 0;
 			return false;
 		}
 		else {
-			printf("\nFound record ID=%d at index %d\n", iddelete, indexdelete);
+			//printf("\nFound record ID=%d at index %d\n", iddelete, indexdelete);
 			cnfmdeleting = 1; //Starts confirmation loop
 		}
 
@@ -459,6 +459,7 @@ bool sort_fn(char* context) {
 			for (int i = 0; sortchoice[i] != '\0'; i++) {
 				if (!isdigit(sortchoice[i])) { // if any char is not a digit, invalid input
 					printf("Invalid input, please try again or type \"exit\".\n");
+					printf("P2_7: ");
 					break;	//continue looping
 				}
 			}
@@ -468,6 +469,7 @@ bool sort_fn(char* context) {
 			if (sortchoice_int >= 1 && sortchoice_int <= col_index) {	// if got here, col_index guaranteed to be >= 1
 				if (StudentDB->columns[sortchoice_int - 1].column_id == COL_OTHER) {// we dont have handling for unexpected cols zktodo: fix?
 					printf("Invalid input, please try again or type \"exit\".\n");
+					printf("P2_7: ");
 					continue;	//continue looping
 				}
 				col_answered = 1;
@@ -487,11 +489,22 @@ bool sort_fn(char* context) {
 		fgets(sortupdown, sizeof(sortupdown), stdin);
 		clean_input(sortupdown);
 
+		if (_stricmp(sortupdown, "exit") == 0) {
+			printf("Exiting Sort.\n");
+			sorting = 0;
+			break;
+		}
+
+		if (_stricmp(sortupdown, "back") == 0) {
+			printf("Returning to Column Selection.\n");
+			col_answered = 0;
+			continue;
+		}
+
 		if (_stricmp(sortupdown, "ascending") != 0 && _stricmp(sortupdown, "descending") != 0) {
 			printf("\nInvalid Input, please enter 'ASCENDING' or 'DESCENDING'\n");
 			continue;
 		}
-		
 
 		if (sort_col == COL_ID) {	//zkchange: now it uses the columns from user file, oso it wont print sorting by ... twice
 			printf("\nSorting by ID");
@@ -624,10 +637,10 @@ bool newfile_fn(char* context) {
 			fprintf(file, "Authors: %s\n\n", authorname);
 			fprintf(file, "Table Name: %s\n", tablename);
 
-			switch (cnfm_int) {
-			case 1: //New Empty Text File
+			if (cnfm_int == 1) { // New Empty Text File
 				fprintf(file, "ID\tNAME\tPROGRAMME\tMARK\n");
-			case 2: {//Current database to new text file
+			}
+			else if (cnfm_int == 2) {
 				if (StudentDB != NULL) {
 					for (int i = 0; i < StudentDB->column_count; i++) {
 						fprintf(file, "%s", StudentDB->columns[i].header_name);
@@ -645,7 +658,15 @@ bool newfile_fn(char* context) {
 							StudentDB->StudentRecord[i].mark);
 					}
 				}
+				else {
+					printf("Failed to save Database into new text file");
+				}
 			}
+			else {
+				printf("This Error shouldn't even be possible because an earlier check should have handled.\n");
+				newfile = 0;
+				cnfminit = 0;
+				break;
 			}
 			fclose(file);
 			printf("CMS: New database file %s created successfully.\n", filename);
@@ -938,7 +959,7 @@ bool update_fn(char* context) {
 	// If no extrainput go to interactive update mode
 	else {
 		/*printf("No extrainput given or invalid\n");*/
-		printf("\n=== Enter New Data (Press Enter to skip) ===\n\n");
+		//printf("\n=== Enter New Data (Press Enter to skip) ===\n\n");
 
 		char buf[100];
 
@@ -975,7 +996,7 @@ bool update_fn(char* context) {
 			}
 
 			default:
-				printf("[Unknown column — skipped]\n");
+				printf("Invalid ID\n");
 				break;
 			}
 		}
