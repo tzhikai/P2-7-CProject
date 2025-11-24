@@ -23,7 +23,7 @@ bool open_fn(char* context) {
 	}
 
 	if (context[0] == '\0' || context == NULL) {
-		printf("No file name detected, please try again.\n");
+		printf("CMS: No file name detected. Please try again.\n");
 		return false;
 	}
 
@@ -85,7 +85,7 @@ bool showall_fn(char* context) {
 	struct Database* StudentDB = get_database();
 
 	if (StudentDB == NULL) {
-		printf("No records in database.\n");
+		printf("CMS: No Database loaded. Please OPEN a file first.\n");
 		return false;
 	}
 
@@ -185,7 +185,7 @@ bool delete_fn(char* context) {
 		struct Database* StudentDB = get_database(); // Initialize existing struct Student Database
 
 		if (StudentDB == NULL || StudentDB->size == 0) {
-			printf("\nNo records in database.");
+			printf("CMS: No Database loaded. Please OPEN a file first.\n");
 			break;
 		}
 		
@@ -421,7 +421,7 @@ bool sort_fn(char* context) {
 	//int student_count = studentcount(); Old code 
 
 	if (StudentDB == NULL) {
-		printf("No Student Records could be found. Please try using OPEN.\n");
+		printf("CMS: No Database loaded. Please OPEN a file first.\n");
 		return false;
 	}
 
@@ -574,6 +574,14 @@ bool newfile_fn(char* context) {
 			newfile = 1;
 		}
 
+		struct Database* StudentDB = get_database();
+
+		if (cnfm_int == 2 && StudentDB == NULL) {
+			printf("CMS: No Database loaded. Please OPEN a file first.\n");
+			cnfminit = 0; //break
+			return false;
+		}
+
 		while (newfile == 1) {
 			char filename[50], dbname[50], authorname[50], tablename[50], file_ext[5] = ".txt", filepath[250] = "src\\data\\";
 			FILE* file = NULL;
@@ -620,8 +628,6 @@ bool newfile_fn(char* context) {
 			case 1: //New Empty Text File
 				fprintf(file, "ID\tNAME\tPROGRAMME\tMARK\n");
 			case 2: {//Current database to new text file
-				struct Database* StudentDB = get_database();
-
 				if (StudentDB != NULL) {
 					for (int i = 0; i < StudentDB->column_count; i++) {
 						fprintf(file, "%s", StudentDB->columns[i].header_name);
@@ -655,7 +661,7 @@ bool undo_fn(char* context){
 	//int student_count = studentcount(); Old code 
 
 	if (StudentDB == NULL) {
-		printf("No Student Records could be found. Please try using OPEN.\n");
+		printf("CMS: No Database loaded. Please OPEN a file first.\n");
 		return false;
 	}
 
@@ -759,7 +765,7 @@ bool undo_fn(char* context){
 void print_summary(struct Database* db) {
 	// Validate database
 	if (db == NULL || db->size == 0) {
-		printf("CMS: No records found.\n");
+		printf("CMS: No Database loaded. Please OPEN a file first.\n");
 		return;
 	}
 	// Initialize tracking variables
@@ -828,7 +834,7 @@ bool update_fn(char* context) {
 	// Load database and validate
 	struct Database* db = get_database();
 	if (db == NULL || db->StudentRecord == NULL) {
-		printf("CMS: No database loaded. Please OPEN one first.\n");
+		printf("CMS: No Database loaded. Please OPEN a file first.\n");
 		return false;
 	}
 	//printf("context here: %s\n", context);
@@ -992,7 +998,7 @@ bool update_fn(char* context) {
 bool insert_fn(char* context) {
 	struct Database* db = get_database();
 	if (db == NULL || db->StudentRecord == NULL) {
-		printf("CMS: Please OPEN the database first.\n");
+		printf("CMS: No Database loaded. Please OPEN a file first.\n");
 		return false;
 	}
 
@@ -1124,7 +1130,7 @@ bool insert_fn(char* context) {
 bool query_fn(char* context) {
 	struct Database* db = get_database();
 	if (db == NULL) {
-		printf("CMS: Please OPEN the database first.\n");
+		printf("CMS: No Database loaded. Please OPEN a file first.\n");
 		return false;
 	}
 
@@ -1175,7 +1181,7 @@ bool query_fn(char* context) {
 bool save_fn(char* context) {
 	struct Database* db = get_database();
 	if (db == NULL) {
-		printf("CMS: Please OPEN the database first.\n");
+		printf("CMS: No Database loaded. Please OPEN a file first.\n");
 		return false;
 	}
 
