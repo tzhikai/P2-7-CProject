@@ -860,7 +860,7 @@ bool update_fn(char* context) {
 	}
 	//printf("context here: %s\n", context);
 	// Extract ID and header/value pairs
-	int id = 0;
+	int id = 0, idx = -1;
 	int* id_ptr = &id;	// for passing by reference to extract_extrainput_id
 
 	struct HeaderValuePair hvp_array[10];
@@ -875,6 +875,7 @@ bool update_fn(char* context) {
 	if (id == 0) {
 		// ask for ID
 		char id_buffer[20];
+		
 
 		do {
 			printf("CMS: Enter the student ID to update: ");
@@ -884,16 +885,16 @@ bool update_fn(char* context) {
 				id_buffer[strlen(id_buffer) - 1] = '\0';
 			}
 
-		} while (validate_id(id_buffer, -1, db, CMD_UPDATE) != 2);
+			if (validate_id(id_buffer, -1, db, CMD_UPDATE) != 2) {
+				printf("CMS: The record with ID \"%s\" does not exist. Please try again.\n", id_buffer);
+				continue;
+			}
+			
+			id = atoi(id_buffer);
+			// Search for student with the given ID
+			idx = id_search(id);
 
-		id = atoi(id_buffer);
-	}
-
-	// Search for student with the given ID
-	int idx = id_search(id);
-	if (idx == -1) {
-		printf("CMS: The record with ID=%d does not exist.\n", id);
-		return false;
+		} while (idx == -1);
 	}
 
 	struct Student* s = &db->StudentRecord[idx];
@@ -964,40 +965,49 @@ bool update_fn(char* context) {
 		char buf[100];
 
 		for (int i = 0; i < db->column_count; i++) {
-			printf("Enter new %s (Enter = skip): ", db->columns[i].header_name);
-
-			if (!fgets(buf, sizeof(buf), stdin)) continue; // read input
-			size_t len = strlen(buf);
-			if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0'; // remove newline
-
-			if (strlen(buf) == 0) continue; // skip if empty
-
-			switch (db->columns[i].column_id) {
-			case COL_NAME:
-				validate_name(buf, idx, CMD_UPDATE); // your validate_name modifies buf in-place
-				strncpy_s(s->name, sizeof(s->name), buf, _TRUNCATE);
-				break;
-
-			case COL_PROGRAMME:
-				validate_name(buf, idx, CMD_UPDATE); // capitalize properly
-				validate_programme(buf, idx, CMD_UPDATE); // ensure valid programme
-				strncpy_s(s->programme, sizeof(s->programme), buf, _TRUNCATE);
-				break;
-
-			case COL_MARK: {
-				float mark = validate_mark(buf, idx, CMD_UPDATE); // returns -1 if invalid
-				if (mark >= 0.0f) {
-					s->mark = mark;
-				}
-				else {
-					printf("Invalid mark. Keeping previous value.\n");
-				}
-				break;
+			if (db->columns[i].column_id == COL_ID) {	// dont allow user to update id
+				continue;
 			}
+			int valid_input = 0;
+			while (!valid_input) {
+				printf("Enter new %s (Enter = skip): ", db->columns[i].header_name);
 
-			default:
-				printf("Invalid ID\n");
-				break;
+				if (!fgets(buf, sizeof(buf), stdin)) continue; // read input
+				size_t len = strlen(buf);
+				if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0'; // remove newline
+
+				if (strlen(buf) == 0) { //skip if user just pressed enter
+					valid_input = 1;
+					continue;
+				}
+
+				switch (db->columns[i].column_id) {
+					case COL_NAME:
+						if (!validate_name(buf, idx, CMD_UPDATE)) {
+							strncpy_s(s->name, sizeof(s->name), buf, _TRUNCATE);
+							valid_input = 1;
+						}
+						break;
+
+					case COL_PROGRAMME:
+						if (!validate_name(buf, idx, CMD_UPDATE) && !validate_programme(buf, idx, CMD_UPDATE)) {
+							strncpy_s(s->programme, sizeof(s->programme), buf, _TRUNCATE);
+							valid_input = 1;
+						}
+						break;
+
+					case COL_MARK: {
+						float mark = validate_mark(buf, idx, CMD_UPDATE); // returns -1 if invalid
+						if (mark >= 0.0f) {
+							s->mark = mark;
+							valid_input = 1;
+						}
+						break;
+					}
+					case COL_OTHER:	// skip
+						valid_input = 1;
+						break;
+					}
 			}
 		}
 	}
@@ -1096,7 +1106,8 @@ bool insert_fn(char* context) {
 				continue;
 			}
 
-			while (1) {
+			int valid_input = 0;
+			while (!valid_input) {
 				printf("CMS: Enter %s (Enter to skip): ", db->columns[i].header_name);
 				fgets(buf, sizeof(buf), stdin);
 
@@ -1104,27 +1115,40 @@ bool insert_fn(char* context) {
 					buf[strlen(buf) - 1] = '\0';
 				}
 
-				if (col == COL_MARK) {
-					if (!(validate_mark(buf, -1, CMD_INSERT) < 0)) {	// -1.0 return means not validate mark
-						newStudent.mark = atof(buf);
+				if (strlen(buf) == 0) {	//empty (user pressed enter)
+					valid_input = 1;	//go to next column
+					continue;
+				}
+
+				//continue looping if not valid
+				switch (col) {
+					case COL_MARK:
+						if (!(validate_mark(buf, -1, CMD_INSERT) < 0)) {	// -1.0 return means not validate mark
+							printf("valid\n");
+							newStudent.mark = atof(buf);
+							valid_input = 1;
+						}
+						else {
+							printf("invalid\n");
+						}
 						break;
-					}
-					else {// continue looping if mark validation fails
-						continue;
-					}
-				}
-				
-				validate_name(buf, -1, CMD_INSERT);
-				if (col == COL_PROGRAMME) {
-					validate_programme(buf, -1, CMD_INSERT);
-					strncpy_s(newStudent.programme, sizeof(newStudent.programme), buf, _TRUNCATE);
-					break;
-				}
-				strncpy_s(newStudent.name, sizeof(newStudent.name), buf, _TRUNCATE);
-				break;
-				
+					case COL_NAME:
+						if (!validate_name(buf, -1, CMD_INSERT)) {
+							strncpy_s(newStudent.name, sizeof(newStudent.name), buf, _TRUNCATE);
+							valid_input = 1;
+						}
+						break;
+					case COL_PROGRAMME:
+						if (!validate_name(buf, -1, CMD_INSERT) && !validate_programme(buf, -1, CMD_INSERT)) {
+							strncpy_s(newStudent.programme, sizeof(newStudent.programme), buf, _TRUNCATE);
+							valid_input = 1;
+						}
+						break;
+					case COL_OTHER:
+						valid_input = 1;
+						break;
+					}	
 			}
-			
 		}
 	}
 
@@ -1284,6 +1308,11 @@ void update_width(struct Database* db, int row_idx, CmdAction action) {
 bool help_fn(char* context) {
 	FILE* file = fopen("src\\Commands.txt", "r");
 
+	if (file == NULL) {
+		printf("Help file not available.\n");
+		return false;
+	}
+
 	char line_buffer[256];
 	int index = 1;
 
@@ -1293,6 +1322,7 @@ bool help_fn(char* context) {
 	}
 
 	fclose(file);
+	return true;
 }
 
 

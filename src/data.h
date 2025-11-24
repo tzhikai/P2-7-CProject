@@ -50,8 +50,8 @@ Columns map_column(char* header_name);
 int id_search(int id);
 
 int validate_id(char* id, int row_number, struct Database* StudentDB, CmdAction cmd);
-void validate_name(char* name, int row_number, CmdAction cmd);
-void validate_programme(char* programme, int row_number, CmdAction cmd);
+int validate_name(char* name, int row_number, CmdAction cmd);
+int validate_programme(char* programme, int row_number, CmdAction cmd);
 float validate_mark(char* mark, int row_number, CmdAction cmd);
 
 int parse_headers(char* header_line, struct Database* StudentDB);

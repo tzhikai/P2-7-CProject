@@ -262,11 +262,14 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 						}
 						break;
 					case COL_NAME:
-						validate_name(value, -1, CMD_OPEN);
+						if (validate_name(value, -1, CMD_OPEN)) {
+							invalid_flag = 1;
+						}
 						break;
 					case COL_PROGRAMME:
-						validate_name(value, -1, CMD_OPEN);
-						validate_programme(value, -1, CMD_OPEN);
+						if (validate_name(value, -1, CMD_OPEN) || validate_programme(value, -1, CMD_OPEN)) {
+							invalid_flag = 1;
+						}
 						break;
 					case COL_MARK:
 						if (validate_mark(value, -1, CMD_OPEN) < 0) {
@@ -276,7 +279,7 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 						break;
 				}
 
-				if (col_id != COL_OTHER && !invalid_flag) {	// if excpected header
+				if (col_id != COL_OTHER && !invalid_flag) {	// if expected header
 					hvpair[pair_count].column_id = col_id;
 					strncpy_s(hvpair[pair_count].datapoint, sizeof(hvpair[pair_count].datapoint), value, _TRUNCATE);
 					//printf("Saving pair of %s = %s\n", header, value);

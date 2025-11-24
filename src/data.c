@@ -114,16 +114,23 @@ int validate_id(char* id, int row_number, struct Database* StudentDB, CmdAction 
 			//return 2;	
 		}
 	}
-
+	//printf("result: %d", result);
 	// printing out the error message (if any)
-	if (result != 0) {
-		print_error(cmd, row_number, error, true);
+	if (cmd == CMD_INSERT || cmd == CMD_OPEN) {
+		if (result != 0) {
+			print_error(cmd, row_number, error, true);
+		}
 	}
+	/*else if (cmd == CMD_UPDATE || cmd == CMD_DELETE) {
+		if (result != 2) {
+			print_error(cmd, row_number, error, true);
+		}
+	}*/
 
 	return result;	// passed validation checks
 }
 
-void validate_name(char* name, int row_number, CmdAction cmd) {
+int validate_name(char* name, int row_number, CmdAction cmd) {
 
 	char* name_copy = strdup(name);
 
@@ -172,11 +179,13 @@ void validate_name(char* name, int row_number, CmdAction cmd) {
 		print_error(cmd, row_number, error, false);
 
 		strncpy_s(name, sizeof(name), "N/A", _TRUNCATE);
+		return 1;
 	}
 	free(name_copy);
+	return 0;
 }
 
-void validate_programme(char* programme, int row_number, CmdAction cmd) {
+int validate_programme(char* programme, int row_number, CmdAction cmd) {
 	struct Database* db = get_database();
 	int col_id = get_column(COL_PROGRAMME);
 	
@@ -199,7 +208,9 @@ void validate_programme(char* programme, int row_number, CmdAction cmd) {
 		print_error(cmd, row_number, error, false);
 
 		strncpy_s(programme, sizeof(programme), "N/A", _TRUNCATE);	// change to N/A if not valid
+		return 1;
 	}
+	return 0;
 }
 
 float validate_mark(char* mark, int row_number, CmdAction cmd) {
@@ -228,6 +239,7 @@ float validate_mark(char* mark, int row_number, CmdAction cmd) {
 
 	if (result != 0.0) {
 		print_error(cmd, row_number, error, false);
+		return result;
 	}
 
 	// round off to 1dp (*10 gets rid of first dp, round off, then /10 gives it back)
@@ -386,11 +398,11 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 			case COL_ID:	// no validation cuz alr done
 				sscanf_s(datapoint, "%d", &current_student->id);
 				break;
-			case COL_NAME:
+			case COL_NAME: // invalid names (eg. 123) will be replaced with N/A
 				validate_name(datapoint, row_number, CMD_OPEN);	// proper capitalisation, removes duped spaces
 				strncpy_s(current_student->name, strlen(datapoint) + 1, datapoint, _TRUNCATE);
 				break;
-			case COL_PROGRAMME:
+			case COL_PROGRAMME: //invalid programmes (eg. Veterinarian) will be replaced with N/A
 				validate_name(datapoint, row_number, CMD_OPEN);	// proper capitalisation, remove duped spaces as well (zktodo: change name)
 				validate_programme(datapoint, row_number, CMD_OPEN);
 				strncpy_s(current_student->programme, strlen(datapoint) + 1, datapoint, _TRUNCATE);
