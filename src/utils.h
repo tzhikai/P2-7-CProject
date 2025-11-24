@@ -17,6 +17,7 @@ struct HeaderValuePair {
 
 int get_column(Columns col_id);
 void print_error(CmdAction cmd, int row_number, char error[], bool is_id);
+int back_column(struct Database* StudentDB, int col_index);
 
 int extract_extrainput_id(
 	int* id_ptr,

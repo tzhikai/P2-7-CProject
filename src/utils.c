@@ -112,6 +112,15 @@ void print_error(CmdAction cmd, int row_number, char error[], bool is_id) {
 	printf("\n");
 }
 
+int back_column(struct Database* StudentDB, int col_index) {
+	for (int i = col_index - 1; i >= 0; i--) {
+		if (StudentDB->columns[i].column_id != COL_ID && StudentDB->columns[i].column_id != COL_OTHER) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* StudentDB, struct HeaderValuePair* hvp_array, CmdAction cmd) {
 	if (extrainput == NULL || extrainput[0] == '\0') {
 		printf("Extra input is NULL or empty.\n");

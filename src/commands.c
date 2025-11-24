@@ -980,6 +980,22 @@ bool update_fn(char* context) {
 					valid_input = 1;
 					continue;
 				}
+				// allow user to type back to go back a column or exit to return to main menu
+				if (_stricmp(buf, "back") == 0) {
+					int scouting_i = back_column(db, i);
+					if (scouting_i >= 0) {
+						i = scouting_i;
+						continue;
+					}
+					else {
+						printf("No previous column.\n");
+						continue;
+					}
+				}
+				else if (_stricmp(buf, "exit") == 0) {
+					printf("Cancelling UPDATE ...\n");
+					return false;
+				}
 
 				switch (db->columns[i].column_id) {
 					case COL_NAME:
@@ -1118,6 +1134,22 @@ bool insert_fn(char* context) {
 				if (strlen(buf) == 0) {	//empty (user pressed enter)
 					valid_input = 1;	//go to next column
 					continue;
+				}
+
+				if (_stricmp(buf, "back") == 0) {
+					int scouting_i = back_column(db, i);
+					if (scouting_i >= 0) {
+						i = scouting_i;
+						continue;
+					}
+					else {
+						printf("No previous column.\n");
+						continue;
+					}
+				}
+				else if (_stricmp(buf, "exit") == 0) {
+					printf("Cancelling INSERT ...\n");
+					return false;
 				}
 
 				//continue looping if not valid
