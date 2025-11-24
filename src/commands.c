@@ -868,7 +868,7 @@ bool update_fn(char* context) {
 	
 	int hvpair_count = 0;
 	if (context != NULL && context[0] != '\0') {
-		hvpair_count = extract_extrainput_id(id_ptr, context, db, hvp_array, false);
+		hvpair_count = extract_extrainput_id(id_ptr, context, db, hvp_array, CMD_UPDATE);
 	}
 
 	// Prompt user if ID not found
@@ -1057,7 +1057,7 @@ bool insert_fn(char* context) {
 
 	int hvpair_count = 0;
 	if (context != NULL && context[0] != '\0') {
-		hvpair_count = extract_extrainput_id(id_ptr, context, db, hvp_array, true);
+		hvpair_count = extract_extrainput_id(id_ptr, context, db, hvp_array, CMD_INSERT);
 	}
 
 	if (id == 0) {
