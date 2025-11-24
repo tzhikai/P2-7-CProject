@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-typedef enum { WIDTH_INSERT, WIDTH_UPDATE, WIDTH_DELETE } WidthAction;
+typedef enum { CMD_INSERT, CMD_UPDATE, CMD_DELETE , CMD_OPEN} CmdAction;
 
 // structure for the operation function
 struct operation {
@@ -14,7 +14,7 @@ struct operation {
 
 // hy test functions
 bool summary_fn(char* context);
-void update_width(struct Database* db, int row_idx, WidthAction action);
+void update_width(struct Database* db, int row_idx, CmdAction action);
 
 // function prototypes
 bool open_fn(char* filename);	// context in this means filename 

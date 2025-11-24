@@ -195,7 +195,7 @@ bool delete_fn(char* context) {
 			clean_input(idbuffer); //Accept id as string for cleanup
 		}
 
-		switch (validate_id(idbuffer, 0, StudentDB)) {
+		switch (validate_id(idbuffer, 0, StudentDB, CMD_DELETE)) {
 			case 1:	// ID is invalid
 				printf("\nPlease enter a valid ID.");
 				idbuffer[0] = '\0'; // prompts fgets again to ask user for id again
@@ -389,7 +389,7 @@ bool delete_fn(char* context) {
 
 				struct Database* db = get_database();
 				if (NEWdb->size > 0) {	// doesnt run if theres no records after deleting
-					update_width(db, indexdelete, WIDTH_DELETE);
+					update_width(db, indexdelete, CMD_DELETE);
 				}
 
 				printf("\nThe record with ID=%d is successfully deleted\n", iddelete);
@@ -884,7 +884,7 @@ bool update_fn(char* context) {
 				id_buffer[strlen(id_buffer) - 1] = '\0';
 			}
 
-		} while (validate_id(id_buffer, -1, db) != 2);
+		} while (validate_id(id_buffer, -1, db, CMD_UPDATE) != 2);
 
 		id = atoi(id_buffer);
 	}
@@ -940,7 +940,7 @@ bool update_fn(char* context) {
 			}
 
 			if (hvp_array[i].column_id != COL_OTHER) {
-				int col_index = get_column(hvp_array[i].column_id, db);
+				int col_index = get_column(hvp_array[i].column_id);
 
 				// this adds a space before the next field
 				strncat_s(undo_fields_all, sizeof(undo_fields_all), " ", _TRUNCATE);
@@ -974,18 +974,18 @@ bool update_fn(char* context) {
 
 			switch (db->columns[i].column_id) {
 			case COL_NAME:
-				validate_name(buf, idx); // your validate_name modifies buf in-place
+				validate_name(buf, idx, CMD_UPDATE); // your validate_name modifies buf in-place
 				strncpy_s(s->name, sizeof(s->name), buf, _TRUNCATE);
 				break;
 
 			case COL_PROGRAMME:
-				validate_name(buf, idx); // capitalize properly
-				validate_programme(buf, idx); // ensure valid programme
+				validate_name(buf, idx, CMD_UPDATE); // capitalize properly
+				validate_programme(buf, idx, CMD_UPDATE); // ensure valid programme
 				strncpy_s(s->programme, sizeof(s->programme), buf, _TRUNCATE);
 				break;
 
 			case COL_MARK: {
-				float mark = validate_mark(buf, idx); // returns -1 if invalid
+				float mark = validate_mark(buf, idx, CMD_UPDATE); // returns -1 if invalid
 				if (mark >= 0.0f) {
 					s->mark = mark;
 				}
@@ -1002,7 +1002,7 @@ bool update_fn(char* context) {
 		}
 	}
 	// Update column width for table formatting
-	update_width(db, idx, WIDTH_UPDATE);
+	update_width(db, idx, CMD_UPDATE);
 
 	char undo_command[100];
 	snprintf(undo_command, sizeof(undo_command), "UPDATE ID=%d%s", id, undo_fields_all);
@@ -1046,7 +1046,7 @@ bool insert_fn(char* context) {
 				id_buffer[strlen(id_buffer) - 1] = '\0';
 			}
 
-		} while (validate_id(id_buffer, -1, db) != 0);
+		} while (validate_id(id_buffer, -1, db, CMD_INSERT) != 0);
 
 		id = atoi(id_buffer);
 	}
@@ -1105,7 +1105,7 @@ bool insert_fn(char* context) {
 				}
 
 				if (col == COL_MARK) {
-					if (!(validate_mark(buf, -1) < 0)) {	// -1.0 return means not validate mark
+					if (!(validate_mark(buf, -1, CMD_INSERT) < 0)) {	// -1.0 return means not validate mark
 						newStudent.mark = atof(buf);
 						break;
 					}
@@ -1114,9 +1114,9 @@ bool insert_fn(char* context) {
 					}
 				}
 				
-				validate_name(buf, -1);
+				validate_name(buf, -1, CMD_INSERT);
 				if (col == COL_PROGRAMME) {
-					validate_programme(buf, -1);
+					validate_programme(buf, -1, CMD_INSERT);
 					strncpy_s(newStudent.programme, sizeof(newStudent.programme), buf, _TRUNCATE);
 					break;
 				}
@@ -1133,7 +1133,7 @@ bool insert_fn(char* context) {
 		return false;
 	}
 
-	update_width(db, db->size - 1, WIDTH_INSERT);
+	update_width(db, db->size - 1, CMD_INSERT);
 
 	char undo_command[100];
 	snprintf(undo_command, sizeof(undo_command), "DELETE %d", newStudent.id);
@@ -1214,7 +1214,7 @@ bool save_fn(char* context) {
 
 // width calculation
 // put types into an enum
-//typedef enum { INSERT, UPDATE, DELETE } WidthAction;
+//typedef enum { INSERT, UPDATE, DELETE } CmdAction;
 
 // Get string length of a student field based on column
 int get_student_field_len(struct Student* s, struct ColumnMap* col) {
@@ -1246,7 +1246,7 @@ int recalc_column_max(struct Database* db, struct ColumnMap* col) {
 }
 
 // Main update_width function
-void update_width(struct Database* db, int row_idx, WidthAction action) {
+void update_width(struct Database* db, int row_idx, CmdAction action) {
 	if (!db || !db->StudentRecord || row_idx < 0) return;
 
 	for (int i = 0; i < db->column_count; i++) {
@@ -1255,17 +1255,17 @@ void update_width(struct Database* db, int row_idx, WidthAction action) {
 		int row_len = 0;
 
 		// Only compute row_len for INSERT or UPDATE (existing row)
-		if (action != WIDTH_DELETE && row_idx < db->size) {
+		if (action != CMD_DELETE && row_idx < db->size) {
 			row_len = get_student_field_len(&db->StudentRecord[row_idx], col);
 		}
 		////printf("[DEBUG] Column %d (%s): old_width=%d, row_len=%d\n",
 		//	i, col->header_name, old_width, row_len);
-		if (action == WIDTH_INSERT) {
+		if (action == CMD_INSERT) {
 			if (row_len > col->max_width)
 				col->max_width = row_len;
 			//printf("[DEBUG] New width after INSERT: %d\n", col->max_width);
 		}
-		else if (action == WIDTH_UPDATE) {
+		else if (action == CMD_UPDATE) {
 			if (row_len > col->max_width) {
 				col->max_width = row_len;
 			}
@@ -1274,7 +1274,7 @@ void update_width(struct Database* db, int row_idx, WidthAction action) {
 			}
 			//printf("[DEBUG] New width after UPDATE: %d\n", col->max_width);
 		}
-		else if (action == WIDTH_DELETE) {
+		else if (action == CMD_DELETE) {
 			col->max_width = recalc_column_max(db, col);
 			//printf("[DEBUG] New width after DELETE: %d\n", col->max_width);
 		}

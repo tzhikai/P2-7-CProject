@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <math.h>
 
+#include "commands.h"
 #include "data.h"
 #include "utils.h"
 
@@ -62,47 +63,67 @@ int id_search(int id) {
 }
 
 // since ID is like the primary key of the db, must be unique and correct
-int validate_id(char* id, int row_number, struct Database* StudentDB) {
+int validate_id(char* id, int row_number, struct Database* StudentDB, CmdAction cmd) {
 	int year = 25;	// zktodo: put this in struct? or make this auto calc from curr year?
 	int id_value = atoi(id);
 	int id_length = strlen(id);
 
+	int result = 0;
+	char error[50];
+
 	for (int i = 0; i < id_length; i++) {
 		if (!isdigit(id[i])) {
-			printf("Row %d, ID %s contains invalid character '%c'. Skipping row.\n", row_number, id, id[i]);
-			return 1;
+			//printf("Row %d, ID %s contains invalid character '%c'. Skipping row.\n", row_number, id, id[i]);
+			snprintf(error, sizeof(error), "ID \"%s\" contains invalid character '%c'", id, id[i]);
+			result = 1;
+			break;
+			//return 1;
 		}
 	}
 
 	if (id_length != 7) {		// must be 7 digits
-		printf("Row %d, ID %s has length of %d, must be 7. Skipping row.\n", row_number, id, (int)id_length);
-		return 1;
+		//printf("Row %d, ID %s has length of %d, must be 7. Skipping row.\n", row_number, id, (int)id_length);
+		snprintf(error, sizeof(error), "ID \"%s\" has length of %d, must be 7", id, (int)id_length);
+		result = 1;
+		//return 1;
 	}	
 	if (id_value < 0 ||			// eg 2600000 onwards not allowed
 		id_value >= ((year + 1) * 100000)) {		
-		printf("Row %d, ID %s is outside of valid ID range. Skipping row.\n", row_number, id);
-		return 1;
+		//printf("Row %d, ID %s is outside of valid ID range. Skipping row.\n", row_number, id);
+		snprintf(error, sizeof(error), "ID \"%s\" is outside of valid ID range", id);
+		result = 1;
+		//return 1;
 	}		
 
 	for (int student_index = 0; student_index < StudentDB->size; student_index++) {
 		if (StudentDB->StudentRecord[student_index].id == id_value) {
-			printf("Row %d, ID %d is already in use", row_number, id_value);
+			//printf("Row %d, ID %d is already in use", row_number, id_value);
+			snprintf(error, sizeof(error), "ID \"%d\" is already in use", id_value);
 
 			// print out the name if name columns is included and name is not NULL
 			if (StudentDB->StudentRecord[student_index].name != NULL) {
-				printf(" by %s", StudentDB->StudentRecord[student_index].name);
+				//printf(" by %s", StudentDB->StudentRecord[student_index].name);
+				strncat_s(error, sizeof(error), " by ", _TRUNCATE);
+				strncat_s(error, sizeof(error), StudentDB->StudentRecord[student_index].name, _TRUNCATE);
 			}
 
-			printf(". Skipping row.\n");
+			//printf(". Skipping row.\n");
 
-			return 2;	// slightly different to differentiate different uses (validate_id > 0 = invalid new id, validate_id < 2 = invalid access id)
+			result = 2; // slightly different to differentiate different uses (validate_id > 0 = invalid new id, validate_id < 2 = invalid access id)
+			break;
+			//return 2;	
 		}
 	}
 
-	return 0;	// passed validation checks
+	// printing out the error message (if any)
+	if (result != 0) {
+		print_error(cmd, row_number, error, true);
+	}
+
+	return result;	// passed validation checks
 }
 
-void validate_name(char* name, int row_number) {
+void validate_name(char* name, int row_number, CmdAction cmd) {
 
 	char* name_copy = strdup(name);
 
@@ -145,13 +166,20 @@ void validate_name(char* name, int row_number) {
 
 	// this is last in case name is all invalid chars (eg !@#) and becomes empty
 	if (strlen(name) == 0) {
+		char error[50];
+		snprintf(error, sizeof(error), "\"%s\" contains no valid characters", name_copy);
+
+		print_error(cmd, row_number, error, false);
+
 		strncpy_s(name, sizeof(name), "N/A", _TRUNCATE);
-		printf("Row %d, %s contains no valid characters.\n", row_number, name_copy);
 	}
 	free(name_copy);
 }
 
-void validate_programme(char* programme, int row_number) {
+void validate_programme(char* programme, int row_number, CmdAction cmd) {
+	struct Database* db = get_database();
+	int col_id = get_column(COL_PROGRAMME);
+	
 	char* valid_programmes[] = {
 		"Software Engineering",
 		"Computer Science",
@@ -165,28 +193,46 @@ void validate_programme(char* programme, int row_number) {
 		}
 	}
 	if (!programme_matched) {
-		strncpy_s(programme, sizeof(programme), "N/A", _TRUNCATE);
-		printf("Row %d, programme is not valid.\n", row_number);
+		char error[50];
+		snprintf(error, sizeof(error), "%s \"%s\" is not valid", db->columns[col_id].header_name, programme);
+
+		print_error(cmd, row_number, error, false);
+
+		strncpy_s(programme, sizeof(programme), "N/A", _TRUNCATE);	// change to N/A if not valid
 	}
 }
 
-float validate_mark(char* mark, int row_number) {
+float validate_mark(char* mark, int row_number, CmdAction cmd) {
+	
+	struct Database* db = get_database();
+	int col_id = get_column(COL_MARK);
+	
 	float mark_value = atof(mark);
+	float result = 0.0;
+	char error[50];
+
 
 	if (strlen(mark) == 0) {
-		printf("Row %d, Mark is empty.\n", row_number);
+		//printf("Row %d, Mark is empty.\n", row_number);
+		snprintf(error, sizeof(error), "%s is empty", db->columns[col_id].header_name);
 
-		return -1.0f;	// -1 is an impossible value since it falls out of range so it means invalid here
+		result = -1.0f;	// -1 is an impossible value since it falls out of range so it means invalid here
 	}
 
 	if (mark_value < 0 || mark_value > 100) {
-		printf("Row %d, Mark outside of range %.1f.\n", row_number, mark_value);
+		//printf("Row %d, Mark outside of range %.1f.\n", row_number, mark_value);
+		snprintf(error, sizeof(error), "%s \"%.1f\" outside of range", db->columns[col_id].header_name, mark_value);
 
-		return -1.0f;
+		result = -1.0f;
+	}
+
+	if (result != 0.0) {
+		print_error(cmd, row_number, error, false);
 	}
 
 	// round off to 1dp (*10 gets rid of first dp, round off, then /10 gives it back)
 	mark_value = roundf(mark_value * 10.0f) / 10.0f;
+
 	return mark_value;
 }
 
@@ -310,7 +356,7 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 	{
 		clean_input(datapoint);
 		if (StudentDB->columns[column_index].column_id == COL_ID) {
-			if (validate_id(datapoint, row_number, StudentDB)) {
+			if (validate_id(datapoint, row_number, StudentDB, CMD_OPEN)) {
 				// id is invalid
 				/*printf("ID IS INVALID!\n");*/
 				return 1;
@@ -341,16 +387,16 @@ int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* c
 				sscanf_s(datapoint, "%d", &current_student->id);
 				break;
 			case COL_NAME:
-				validate_name(datapoint, row_number);	// proper capitalisation, removes duped spaces
+				validate_name(datapoint, row_number, CMD_OPEN);	// proper capitalisation, removes duped spaces
 				strncpy_s(current_student->name, strlen(datapoint) + 1, datapoint, _TRUNCATE);
 				break;
 			case COL_PROGRAMME:
-				validate_name(datapoint, row_number);	// proper capitalisation, remove duped spaces as well (zktodo: change name)
-				validate_programme(datapoint, row_number);
+				validate_name(datapoint, row_number, CMD_OPEN);	// proper capitalisation, remove duped spaces as well (zktodo: change name)
+				validate_programme(datapoint, row_number, CMD_OPEN);
 				strncpy_s(current_student->programme, strlen(datapoint) + 1, datapoint, _TRUNCATE);
 				break;
 			case COL_MARK:
-				current_student->mark = validate_mark(datapoint, row_number);
+				current_student->mark = validate_mark(datapoint, row_number, CMD_OPEN);
 				break;
 			case COL_OTHER:	// no validation
 				break;
@@ -423,6 +469,7 @@ struct Database* load_data(FILE *file) {
 				//printf("error occured\n");
 				return NULL;
 			}
+			set_database(StudentDB); // purpose is to secure the header names within StudentDB to be retrieved during parse_datarows
 		}
 
 		if (line_counter <= 5) {
@@ -452,12 +499,12 @@ struct Database* load_data(FILE *file) {
 			continue;	// irreparable error (id invalid)
 		}
 		else {
-			printf("Successfully read student %d: ID=%d, Name=%s, Programme=%s, Mark=%.1f\n",
+			/*printf("Successfully read student %d: ID=%d, Name=%s, Programme=%s, Mark=%.1f\n",
 			student_index,
 			StudentDB->StudentRecord[student_index].id,
 			StudentDB->StudentRecord[student_index].name,
 			StudentDB->StudentRecord[student_index].programme,
-			StudentDB->StudentRecord[student_index].mark);
+			StudentDB->StudentRecord[student_index].mark);*/
 		}
 
 		student_index++;

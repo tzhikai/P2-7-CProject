@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include "data.h"
+#include "commands.h"
 
 // function prototypes
 void clean_input(char command[]);
@@ -14,20 +15,22 @@ struct HeaderValuePair {
 	char datapoint[50];
 };
 
-int get_column(Columns col_id, struct Database* StudentDB);
+int get_column(Columns col_id);
+void print_error(CmdAction cmd, int row_number, char error[], bool is_id);
 
 int extract_extrainput_id(
 	int* id_ptr,
 	char* extrainput,
 	struct Database* StudentDB,
 	struct HeaderValuePair* hvp_array,
-	bool is_new		// represents INSERT or UPDATE	(true = INSERT, false = UPDATE)
+	CmdAction cmd		// represents INSERT or UPDATE	(true = INSERT, false = UPDATE)
 );
 
 int extract_extrainput_values(
 	struct HeaderValuePair* hvpair,
 	char* extrainput,
-	struct Database* StudentDB
+	struct Database* StudentDB,
+	CmdAction cmd
 );
 
 #define MAX_UNDOS 5

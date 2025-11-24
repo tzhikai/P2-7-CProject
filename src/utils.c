@@ -4,6 +4,7 @@
 
 #include "utils.h"
 #include "data.h"
+#include "commands.h"
 
 
 static struct UndoStack UndoCmdsStatic;
@@ -72,7 +73,8 @@ void join_words(char input[]) {
 }
 
 // loops thru ColumnMap within StudentDB to find the index within column array from col_id like COL_MARK
-int get_column(Columns col_id, struct Database* StudentDB) {
+int get_column(Columns col_id) {
+	struct Database* StudentDB = get_database();
 
 	if (StudentDB == NULL || StudentDB->columns == NULL) {
 		return -1;
@@ -89,7 +91,28 @@ int get_column(Columns col_id, struct Database* StudentDB) {
 	return -1;
 }
 
-int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* StudentDB, struct HeaderValuePair* hvp_array, bool is_new) {
+void print_error(CmdAction cmd, int row_number, char error[], bool is_id) {
+	if (cmd == CMD_OPEN && row_number != -1) {
+		printf("Row %d, ", row_number);
+	}
+
+	printf("%s.", error);
+
+	if (cmd == CMD_OPEN) {
+		if (is_id) {	// primary key got no excuse
+			printf(" Skipping row.");
+		}
+		else {			// non primary key can just tolerate
+			printf(" Replaced with \"N/A\".");
+		}
+	}
+	else {	// not open_fn
+		printf(" Please try again.");
+	}
+	printf("\n");
+}
+
+int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* StudentDB, struct HeaderValuePair* hvp_array, CmdAction cmd) {
 	if (extrainput == NULL || extrainput[0] == '\0') {
 		printf("Extra input is NULL or empty.\n");
 		return 0;
@@ -128,12 +151,12 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 			clean_input(cmd_ptr);
 			;
 			if (cmd_ptr != NULL) {
-				switch (validate_id(cmd_ptr, -1, StudentDB)) {
+				switch (validate_id(cmd_ptr, -1, StudentDB, cmd)) {
 				case 1:
 					printf("Extra input invalid. ID invalid.\n");
 					return 0;
 				case 0:	// valid id, unused
-					if (is_new) {	// is this used for INSERT?
+					if (cmd == CMD_INSERT) {	// is this used for INSERT?
 						*id_ptr = atoi(cmd_ptr);
 						//printf("ID %s found, now is %d.\n", cmd_ptr, *id_ptr);
 						break;
@@ -141,9 +164,9 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 					printf("Extra input invalid. ID not found.\n");
 					return 0;
 				case 2: // valid id, duplicate
-					if (!is_new) {	// is this used for UPDATE?
+					if (cmd == CMD_UPDATE || cmd == CMD_DELETE) {	// is this used for UPDATE or DELETE
 						*id_ptr = atoi(cmd_ptr);
-						printf("ID %s found, now is %d.\n", cmd_ptr, *id_ptr);
+						//printf("ID %s found, now is %d.\n", cmd_ptr, *id_ptr);
 						break;
 					}
 					printf("Extra input invalid. ID already in use.\n");
@@ -162,6 +185,8 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 		//printf("post loop is NULL\n");
 		return 0;
 	}
+	
+
 	
 	// handle remaining fields, if any
 
@@ -186,13 +211,14 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 	//hvp_array = calloc(max_pairs, sizeof(struct HeaderValuePair));	// wont need to realloc since using max possible amt
 
 	
-	hvp_count = extract_extrainput_values(hvp_array, remaining, StudentDB);
+	hvp_count = extract_extrainput_values(hvp_array, remaining, StudentDB, cmd);
 	//printf("hvp_count = %d\n", hvp_count);
+	printf("error testing %d", hvp_count);
 	return hvp_count;
 
 }
 
-int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, struct Database* StudentDB) {
+int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, struct Database* StudentDB, CmdAction cmd) {
 	// input eg ID=2500321 Mark=85.5 Name=John Souls Programme=Digital Supply Chain
 	// find = to get Mark, then check for = to see if theres another header, if not then rest is value, if so then remove everything after the last space
 
@@ -230,20 +256,20 @@ int extract_extrainput_values(struct HeaderValuePair* hvpair, char* extrainput, 
 				invalid_flag = 0;
 				switch (col_id) {
 					case COL_ID:
-						if (validate_id(value, -1, StudentDB) != 2) {	// -1 cuz not from file, so no row number
+						if (validate_id(value, -1, StudentDB, cmd) != 2) {	// -1 cuz not from file, so no row number
 							//printf("Extra field invalid. ID invalid.\n");
 							invalid_flag = 1;
 						}
 						break;
 					case COL_NAME:
-						validate_name(value, -1);
+						validate_name(value, -1, CMD_OPEN);
 						break;
 					case COL_PROGRAMME:
-						validate_name(value, -1);
-						validate_programme(value, -1);
+						validate_name(value, -1, CMD_OPEN);
+						validate_programme(value, -1, CMD_OPEN);
 						break;
 					case COL_MARK:
-						if (validate_mark(value, -1) < 0) {
+						if (validate_mark(value, -1, CMD_OPEN) < 0) {
 							//printf("Extra field invalid. Mark invalid.\n");
 							invalid_flag = 1;
 						}
