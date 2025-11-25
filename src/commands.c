@@ -801,10 +801,16 @@ bool undo_fn(char* context){
 bool summary_fn(char* context) {
 	// Validate database
 	struct Database* db = get_database();
-	if (db == NULL || db->size == 0) {
+	if (db == NULL) {
 		printf("CMS: No Database loaded. Please OPEN a file first.\n");
 		return false;
 	}
+
+	if (db->size == 0) {
+		printf("No records to show.\n");
+		return false;
+	}
+
 	// Initialize tracking variables
 	float highest = -1;
 	float lowest = 101;
@@ -847,6 +853,7 @@ bool summary_fn(char* context) {
 	}
 
 	printf("CMS: Summary Statistics\n");
+
 
 	// Exception handling for no valid marks in database
 	if (validCount == 0) {
