@@ -572,9 +572,9 @@ bool sort_fn(char* context) {
 				qsort(StudentDB->StudentRecord, StudentDB->size, sizeof(struct Student), compprogrammedown);
 			}
 		}
+		printf("\nSorting Successful.\n");
 		sorting = 0;
 	}
-	printf("\nSorting Successful.\n");
 	return true;
 }
 
