@@ -99,7 +99,7 @@ int validate_id(char* id, int row_number, struct Database* StudentDB, CmdAction 
 		if (StudentDB->StudentRecord[student_index].id == id_value) {
 			//printf("Row %d, ID %d is already in use", row_number, id_value);
 			snprintf(error, sizeof(error), "ID \"%d\" is already in use", id_value);
-
+;
 			// print out the name if name columns is included and name is not NULL
 			if (StudentDB->StudentRecord[student_index].name != NULL) {
 				//printf(" by %s", StudentDB->StudentRecord[student_index].name);
@@ -121,11 +121,12 @@ int validate_id(char* id, int row_number, struct Database* StudentDB, CmdAction 
 			print_error(cmd, row_number, error, true);
 		}
 	}
-	/*else if (cmd == CMD_UPDATE || cmd == CMD_DELETE) {
+	else if (cmd == CMD_UPDATE || cmd == CMD_DELETE) {
 		if (result != 2) {
+			snprintf(error, sizeof(error), "ID \"%d\" is not in use", id_value);
 			print_error(cmd, row_number, error, true);
 		}
-	}*/
+	}
 
 	return result;	// passed validation checks
 }

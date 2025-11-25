@@ -185,6 +185,9 @@ bool delete_fn(char* context) {
 		int id = 0;
 		int* id_ptr = &id;
 
+		/*struct HeaderValuePair hvp_array[10];
+		memset(hvp_array, 0, sizeof(hvp_array));*/
+
 		if (context != NULL && context[0] != '\0') {
 			extract_extrainput_id(id_ptr, context, StudentDB, NULL, CMD_DELETE);	
 			// NULL for the HeaderValuePair struct input, cuz DELETE wouldnt use it
@@ -195,28 +198,38 @@ bool delete_fn(char* context) {
 		// If ID was successfully extracted from context, use it
 		if (id != 0) {
 			snprintf(idbuffer, sizeof(idbuffer), "%d", id);
-			printf("id buffer: %s\n", idbuffer);
+			//printf("id buffer: %s\n", idbuffer);
 		}
 		
 		if (idbuffer[0] == '\0') {	// means user just typed DELETE, no id initially given
-			printf("ID to Delete: \n");
-			fgets(idbuffer, sizeof(idbuffer), stdin);
-			clean_input(idbuffer); //Accept id as string for cleanup
-		}
+			int valid_id = 0;
+			while (!valid_id) {
+				printf("Enter ID of row to delete: ");
+				fgets(idbuffer, sizeof(idbuffer), stdin);
+				clean_input(idbuffer); //Accept id as string for cleanup
 
-		switch (validate_id(idbuffer, 0, StudentDB, CMD_DELETE)) {
-			case 1:	// ID is invalid
-				printf("\nPlease enter a valid ID.");
-				idbuffer[0] = '\0'; // prompts fgets again to ask user for id again
-				continue;
-			case 0:	// ID is valid but not in use, nothing to delete
-				printf("\nID is not in use.");
-				idbuffer[0] = '\0';
-				continue;
-			case 2:	// ID is valid and in use, proceed to deleting
-				break;
-		}
+				if (_stricmp(idbuffer, "exit") == 0) {
+					printf("Cancelling DELETE ...\n");
+					return false;
+				}
 
+				switch (validate_id(idbuffer, 0, StudentDB, CMD_DELETE)) {
+					case 1:	// ID is invalid
+						//printf("Please enter a valid ID.\n");
+						idbuffer[0] = '\0'; // prompts fgets again to ask user for id again
+						continue;
+					case 0:	// ID is valid but not in use, nothing to delete
+						//printf("ID is not in use.\n");
+						idbuffer[0] = '\0';
+						continue;
+					case 2:	// ID is valid and in use, proceed to deleting
+						valid_id = 1;
+						break;
+					}
+			}
+
+			
+		}
 
 		int iddelete = atoi(idbuffer); //Convert string to int, if string is not integer, atoi returns 0
 
@@ -461,6 +474,7 @@ bool sort_fn(char* context) {
 
 			if (_stricmp(sortchoice, "exit") == 0) {
 				sorting = 0;
+				printf("Cancelling SORT ...\n");
 				return false;
 			}
 
@@ -498,7 +512,7 @@ bool sort_fn(char* context) {
 		clean_input(sortupdown);
 
 		if (_stricmp(sortupdown, "exit") == 0) {
-			printf("Exiting Sort.\n");
+			printf("Cancelling SORT ...\n");
 			sorting = 0;
 			break;
 		}
