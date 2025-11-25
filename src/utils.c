@@ -124,6 +124,61 @@ int back_column(struct Database* StudentDB, int col_index) {
 	return -1;
 }
 
+void print_headers(struct Database* StudentDB) {
+	for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
+		printf("%s", StudentDB->columns[column_index].header_name);
+		int filler_width = StudentDB->columns[column_index].max_width - strlen(StudentDB->columns[column_index].header_name);
+		printf("%*s\t", filler_width, "");
+	}
+	printf("\n");
+}
+
+void print_datarow(struct Database* StudentDB, int student_index) {
+	struct Student* record = StudentDB->StudentRecord;
+	// for each column in the row
+	for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
+		int datapoint_width = 0;
+		char mark_str[10];
+
+		switch (StudentDB->columns[column_index].column_id) {
+		case COL_ID:
+			printf("%d", record[student_index].id);
+			// ID are fixed to 7 digits, so no extra spaces here
+			//printf("%*s", StudentDB->columns[column_index].max_width - strlen(record[student_index].id), "");
+			datapoint_width = 7;	// 7 digit id
+			break;
+		case COL_NAME:
+			printf("%s", record[student_index].name);
+			//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].name)), "");
+			datapoint_width = strlen(record[student_index].name);
+			break;
+		case COL_PROGRAMME:
+			printf("%s", record[student_index].programme);
+			//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].programme)), "");
+			datapoint_width = strlen(record[student_index].programme);
+			break;
+		case COL_MARK:
+			printf("%.1f", record[student_index].mark);	// %.1f below cuz %f gives smth like 0.000000 (width becomes too high)
+			sprintf_s(mark_str, sizeof(mark_str), "%.1f", record[student_index].mark);
+			datapoint_width = strlen(mark_str);
+
+			// Mark has a max possible length of 5 (100.0)
+			break;
+		case COL_OTHER:	// safety net	(not printing the value cuz im currently not storing those vals)
+			printf("N/A");
+			datapoint_width = 3;
+			break;
+		}
+
+		printf("%*s", (StudentDB->columns[column_index].max_width - datapoint_width), "");	// add spaces to align columns in print
+
+		if (column_index != StudentDB->column_count - 1) {//-1 because column_index starts from 0
+			printf("\t");	// \t unless end of line, though doesnt rly matter (inputs are stripped anyway)
+		}
+	}
+	printf("\n");
+}
+
 int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* StudentDB, struct HeaderValuePair* hvp_array, CmdAction cmd) {
 	if (extrainput == NULL || extrainput[0] == '\0') {
 		printf("Extra input is NULL or empty.\n");

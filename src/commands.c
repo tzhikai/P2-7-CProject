@@ -99,74 +99,11 @@ bool showall_fn(char* context) {
 	//printf("%s and %s\n", StudentDB->databaseName, StudentDB->authors);
 	printf("Here are all the records found in the table \"%s\".\n", StudentDB->tableName);
 
-	// print out header row, same as input file
-	for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
-		printf("%s", StudentDB->columns[column_index].header_name);
-		//switch (StudentDB->columns[column_index].column_id) {
-		//	case COL_ID:
-		//		filler_width = 5;	// length of 7 digit id minus length of "ID"
-		//		break;
-		//	case COL_NAME:
-		//		filler_width = StudentDB->columns[column_index].max_width - strlen(StudentDB->columns[column_index].header_name);
-		//		break;
-		//	case COL_PROGRAMME:
-		//		filler_width = StudentDB->columns[column_index].max_width - strlen(StudentDB->columns[column_index].header_name);
-		//		break;
-		//	case COL_MARK:
-		//		filler_width = 1;	// length of "100.0" minus length of "MARK"
-		//		break;
-		//	case COL_OTHER:
-		//		break;
-		//}
-		int filler_width = StudentDB->columns[column_index].max_width - strlen(StudentDB->columns[column_index].header_name);
-		printf("%*s\t", filler_width, "");
-	}
-	printf("\n");
+	print_headers(StudentDB);
 	
 	// print out the data rows, following header order
 	for (int student_index = 0; student_index < StudentDB->size; student_index++) {
-		// for each column in the row
-		for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
-			int datapoint_width = 0;
-			char mark_str[10];
-
-			switch (StudentDB->columns[column_index].column_id) {
-				case COL_ID:
-					printf("%d", record[student_index].id);
-					// ID are fixed to 7 digits, so no extra spaces here
-					//printf("%*s", StudentDB->columns[column_index].max_width - strlen(record[student_index].id), "");
-					datapoint_width = 7;	// 7 digit id
-					break;
-				case COL_NAME:
-					printf("%s", record[student_index].name);
-					//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].name)), "");
-					datapoint_width = strlen(record[student_index].name);
-					break;
-				case COL_PROGRAMME:
-					printf("%s", record[student_index].programme);
-					//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].programme)), "");
-					datapoint_width = strlen(record[student_index].programme);
-					break;
-				case COL_MARK:
-					printf("%.1f", record[student_index].mark);	// %.1f below cuz %f gives smth like 0.000000 (width becomes too high)
-					sprintf_s(mark_str, sizeof(mark_str), "%.1f", record[student_index].mark);
-					datapoint_width = strlen(mark_str);
-
-					// Mark has a max possible length of 5 (100.0)
-					break;
-				case COL_OTHER:	// safety net	(not printing the value cuz im currently not storing those vals)
-					printf("N/A");
-					datapoint_width = 3;
-					break;
-			}
-
-			printf("%*s", (StudentDB->columns[column_index].max_width - datapoint_width), "");	// add spaces to align columns in print
-
-			if (column_index != StudentDB->column_count - 1) {//-1 because column_index starts from 0
-				printf("\t");	// \t unless end of line, though doesnt rly matter (inputs are stripped anyway)
-			}
-		}
-		printf("\n");
+		print_datarow(StudentDB, student_index);
 	}
 
 	return true;
@@ -951,8 +888,9 @@ bool update_fn(char* context) {
 	struct Student s_backup = *s;
 
 	printf("\nCMS: Record found.\n");
-	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
-		s->id, s->name, s->programme, s->mark);
+
+	print_headers(db);
+	print_datarow(db, idx);
 
 	// If extrainput header-value pairs exist, apply them
 
@@ -1302,8 +1240,9 @@ bool query_fn(char* context) {
 
 	bool found = false;
 	printf("Results for keyword \"%s\":\n", context);
+	print_headers(db);
 
-	for (int i = 0; i < db->size; i++) {
+	for (int i = 0; i < db->size; i++) {	// this works even if id, name or programme column isnt present
 		char name[100], programme[100];
 		strncpy_s(name, sizeof(name), db->StudentRecord[i].name, _TRUNCATE);
 		strncpy_s(programme, sizeof(programme), db->StudentRecord[i].programme, _TRUNCATE);
@@ -1314,11 +1253,7 @@ bool query_fn(char* context) {
 		sprintf_s(id_str, sizeof(id_str), "%d", db->StudentRecord[i].id);
 
 		if (strstr(name, keyword) || strstr(programme, keyword) || strstr(id_str, keyword)) {
-			printf("%-8d %-25s %-30s %.1f\n",
-				db->StudentRecord[i].id,
-				db->StudentRecord[i].name,
-				db->StudentRecord[i].programme,
-				db->StudentRecord[i].mark);
+			print_datarow(db, i);
 			found = true;
 		}
 	}
@@ -1344,10 +1279,6 @@ bool save_fn(char* context) {
 	printf("CMS: File saved successfully.\n");
 	return true;
 }
-
-// width calculation
-// put types into an enum
-//typedef enum { INSERT, UPDATE, DELETE } CmdAction;
 
 // Get string length of a student field based on column
 int get_student_field_len(struct Student* s, struct ColumnMap* col) {
