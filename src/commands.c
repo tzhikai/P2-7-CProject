@@ -890,6 +890,11 @@ bool update_fn(char* context) {
 				id_buffer[strlen(id_buffer) - 1] = '\0';
 			}
 
+			if (_stricmp(id_buffer, "exit") == 0) {
+				printf("Cancelling UPDATE ...\n");
+				return false;
+			}
+
 			if (validate_id(id_buffer, -1, db, CMD_UPDATE) != 2) {
 				printf("CMS: The record with ID \"%s\" does not exist. Please try again.\n", id_buffer);
 				continue;
@@ -910,6 +915,7 @@ bool update_fn(char* context) {
 	}
 
 	struct Student* s = &db->StudentRecord[idx];
+	struct Student s_backup = *s;
 
 	printf("\nCMS: Record found.\n");
 	printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
@@ -1006,6 +1012,7 @@ bool update_fn(char* context) {
 				}
 				else if (_stricmp(buf, "exit") == 0) {
 					printf("Cancelling UPDATE ...\n");
+					*s = s_backup;
 					return false;
 				}
 
@@ -1082,6 +1089,11 @@ bool insert_fn(char* context) {
 
 			if (strlen(id_buffer) > 0) {
 				id_buffer[strlen(id_buffer) - 1] = '\0';
+			}
+
+			if (_stricmp(id_buffer, "exit") == 0) {
+				printf("Cancelling INSERT ...\n");
+				return false;
 			}
 
 		} while (validate_id(id_buffer, -1, db, CMD_INSERT) != 0);
