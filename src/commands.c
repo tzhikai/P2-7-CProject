@@ -91,6 +91,11 @@ bool showall_fn(char* context) {
 
 	struct Student* record = StudentDB->StudentRecord;	// shortcut to type less
 	
+	if (StudentDB->size == 0) {
+		printf("No records to show.\n");
+		return false;
+	}
+
 	//printf("%s and %s\n", StudentDB->databaseName, StudentDB->authors);
 	printf("Here are all the records found in the table \"%s\".\n", StudentDB->tableName);
 
