@@ -623,8 +623,34 @@ bool add_student(struct Student newStudent) {
 	db->StudentRecord[db->size] = newStudent;
 	db->size++;
 
-	printf("CMS: Successfully added new student (ID=%d, Name=%s, Programme=%s, Mark=%.1f)\n",
-		newStudent.id, newStudent.name, newStudent.programme, newStudent.mark);
+	printf("CMS: Successfully added new student. (");
+	const char* sep = "";
+	for (int i = 0; i < db->column_count; i++) {
+		switch (db->columns[i].column_id) {
+			case COL_ID:
+				printf("%sID=%d", sep, newStudent.id);
+				sep = ", ";
+				break;
+			case COL_NAME:
+				printf("%sName=%s", sep, newStudent.name);
+				sep = ", ";
+				break;
+			case COL_PROGRAMME:
+				printf("%sProgramme=%s", sep, newStudent.programme);
+				sep = ", ";
+				break;
+			case COL_MARK:
+				printf("%sMark=%.1f", sep, newStudent.mark);
+				sep = ", ";
+				break;
+			case COL_OTHER:
+				break; //skip because that column's header name is not stored, and its possible theres more than one of them
+			}
+	}
+
+	printf(")\n");
+	/*printf("CMS: Successfully added new student (ID=%d, Name=%s, Programme=%s, Mark=%.1f)\n",
+		newStudent.id, newStudent.name, newStudent.programme, newStudent.mark);*/
 	return true;
 }
 

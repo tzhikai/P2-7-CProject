@@ -1184,7 +1184,19 @@ bool insert_fn(char* context) {
 				}
 
 				if (strlen(buf) == 0) {	//empty (user pressed enter)
-					valid_input = 1;	//go to next column
+					switch (col) {
+					case COL_NAME:
+						strncpy_s(newStudent.name, sizeof(newStudent.name), "N/A", _TRUNCATE);
+						break;
+					case COL_PROGRAMME:
+						strncpy_s(newStudent.programme, sizeof(newStudent.programme), "N/A", _TRUNCATE);
+						break;
+					case COL_MARK:
+						newStudent.mark = -1.0f;
+						break;
+					}
+
+					valid_input = 1;
 					continue;
 				}
 
