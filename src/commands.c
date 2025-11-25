@@ -173,13 +173,6 @@ bool delete_fn(char* context) {
 	char cnfm[6];
 	char idbuffer[10] = "";
 
-	// means user typed something after delete command
-	if (context != NULL && context[0] != '\0') {
-		clean_input(context);
-		strncpy_s(idbuffer, sizeof(idbuffer), context, _TRUNCATE);
-		//printf("User gave ID to delete: %s\n", idbuffer);
-	}
-
 	int deleting = 1;
 	while (deleting == 1) {
 		struct Database* StudentDB = get_database(); // Initialize existing struct Student Database
@@ -187,6 +180,25 @@ bool delete_fn(char* context) {
 		if (StudentDB == NULL || StudentDB->size == 0) {
 			printf("CMS: No Database loaded. Please OPEN a file first.\n");
 			break;
+		}
+
+		int id = 0;
+		int* id_ptr = &id;
+
+		struct HeaderValuePair hvp_array[10];
+		memset(hvp_array, 0, sizeof(hvp_array));
+
+		int hvpair_count = 0;
+		if (context != NULL && context[0] != '\0') {
+			hvpair_count = extract_extrainput_id(id_ptr, context, StudentDB, hvp_array, true); // false for DELETE
+		}
+
+		char idbuffer[10] = "";
+
+		// If ID was successfully extracted from context, use it
+		if (id != 0) {
+			snprintf(idbuffer, sizeof(idbuffer), "%d", id);
+			printf("id buffer: %s\n", idbuffer);
 		}
 		
 		if (idbuffer[0] == '\0') {	// means user just typed DELETE, no id initially given
