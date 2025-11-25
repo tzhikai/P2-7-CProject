@@ -1006,7 +1006,7 @@ bool update_fn(char* context) {
 		char buf[100];
 
 		for (int i = 0; i < db->column_count; i++) {
-			if (db->columns[i].column_id == COL_ID) {	// dont allow user to update id
+			if (db->columns[i].column_id == COL_ID || db->columns[i].column_id == COL_OTHER) {	// dont allow user to update id or the unrecognised column
 				continue;
 			}
 			int valid_input = 0;
