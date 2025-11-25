@@ -1,0 +1,8 @@
+Database Name: Test_CMS
+Authors: Datta Bays
+
+Table Name: StudentRecords
+Name		Mark	ID
+John Souls	70.5	2500123
+Lenny Ovo	63.4	2500456
+Artie Ex	85.9	2500789

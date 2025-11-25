@@ -1277,7 +1277,19 @@ bool query_fn(char* context) {
 	}
 
 	if (context == NULL || strlen(context) == 0) {
-		printf("Please provide a keyword (ID, name, or programme): ");
+		char user_prompt[100] = "Please provide a keyword to query columns ";
+		const char* sep = "";
+
+		for (int col_index = 0; col_index < db->column_count; col_index++) {
+			if (db->columns[col_index].column_id == COL_OTHER || db->columns[col_index].column_id == COL_MARK) {
+				continue;
+			}
+			strncat_s(user_prompt, sizeof(user_prompt), sep, _TRUNCATE);
+			strncat_s(user_prompt, sizeof(user_prompt), db->columns[col_index].header_name, _TRUNCATE);
+			sep = ", ";
+		}
+
+		printf("%s with: ", user_prompt);
 		char input[100];
 		fgets(input, sizeof(input), stdin);
 		clean_input(input);
@@ -1289,7 +1301,7 @@ bool query_fn(char* context) {
 	for (int i = 0; keyword[i]; i++) keyword[i] = tolower(keyword[i]);
 
 	bool found = false;
-	printf("Results for \"%s\":\n", context);
+	printf("Results for keyword \"%s\":\n", context);
 
 	for (int i = 0; i < db->size; i++) {
 		char name[100], programme[100];
@@ -1312,7 +1324,7 @@ bool query_fn(char* context) {
 	}
 
 	if (!found) {
-		printf("No matching record found for \"%s\".\n", context);
+		printf("No matching record found for keyword \"%s\".\n", context);
 	}
 	return true;
 }
