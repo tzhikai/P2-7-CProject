@@ -2,9 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <direct.h>	// for checking current working directory to see what the relative path is
 #include <ctype.h>
-#include <float.h>
 
 #include "commands.h"
 #include "data.h"
@@ -116,8 +114,6 @@ bool showall_fn(char* context) {
 	return true;
 };
 
-// jaison delete function
-// zkchange: should be bool since thats what run_command expects, and theres no need to return the newDB when we use set_database
 bool delete_fn(char* context) {
 	char cnfm[6];
 	char idbuffer[10] = "";
@@ -384,8 +380,6 @@ bool delete_fn(char* context) {
 	//insert_undostack("test_insert_undo");
 }
 
-// jaison sort function
-
 bool sort_fn(char* context) {
 	struct Database* StudentDB = get_database(); //struct Student and function get_database() is in data.c
 	//int student_count = studentcount(); Old code 
@@ -527,7 +521,6 @@ bool sort_fn(char* context) {
 	return true;
 }
 
-// Jaison NewFile Function
 bool newfile_fn(char* context) {
 	int cnfminit = 1, newfile = 0, cnfm_int;
 	char cnfm[7];
@@ -805,7 +798,6 @@ bool undo_fn(char* context){
 	return true;
 }
 
-// HY show summary
 void print_summary(struct Database* db) {
 	// Validate database
 	if (db == NULL || db->size == 0) {
@@ -844,8 +836,14 @@ void print_summary(struct Database* db) {
 	}
 
 	int mark_col = get_column(COL_MARK);
+
 	char mark_header[20] = "";
 	strncpy_s(mark_header, sizeof(mark_header), db->columns[mark_col].header_name, _TRUNCATE);
+
+	if (mark_col == -1) {
+		printf("CMS: No %s column found in file. Unable to calculate summary.\n", mark_header);
+		return;
+	}
 
 	printf("CMS: Summary Statistics\n");
 
@@ -872,14 +870,12 @@ void print_summary(struct Database* db) {
 		mark_header, lowest, db->StudentRecord[lowestIndex].name);
 }
 
-// Call summary function
 bool summary_fn(char* context) {
 	struct Database* db = get_database();
 	print_summary(db);
 	return true;
 }
 
-//hy update
 bool update_fn(char* context) {
 	// Load database and validate
 	struct Database* db = get_database();
@@ -1081,9 +1077,6 @@ bool update_fn(char* context) {
 	return true;
 }
 
-// =====================================================
-// INSERT FUNCTION
-// =====================================================
 bool insert_fn(char* context) {
 	struct Database* db = get_database();
 	if (db == NULL || db->StudentRecord == NULL) {
@@ -1256,9 +1249,6 @@ bool insert_fn(char* context) {
 	return true;
 }
 
-// =====================================================
-// QUERY FUNCTION
-// =====================================================
 bool query_fn(char* context) {
 	struct Database* db = get_database();
 	if (db == NULL) {
@@ -1316,9 +1306,6 @@ bool query_fn(char* context) {
 	return true;
 }
 
-// =====================================================
-// SAVE FUNCTION
-// =====================================================
 bool save_fn(char* context) {
 	struct Database* db = get_database();
 	if (db == NULL) {
@@ -1330,71 +1317,6 @@ bool save_fn(char* context) {
 
 	printf("CMS: File saved successfully.\n");
 	return true;
-}
-
-// Get string length of a student field based on column
-int get_student_field_len(struct Student* s, struct ColumnMap* col) {
-	char buf[32];
-	switch (col->column_id) {
-	case COL_ID:
-		sprintf_s(buf, sizeof(buf), "%d", s->id);
-		return (int)strlen(buf);
-	case COL_NAME:
-		return (int)strlen(s->name);
-	case COL_PROGRAMME:
-		return (int)strlen(s->programme);
-	case COL_MARK:
-		sprintf_s(buf, sizeof(buf), "%.1f", s->mark);
-		return (int)strlen(buf);
-	default:
-		return 0;
-	}
-}
-
-// Recalculate max width for a specific column
-int recalc_column_max(struct Database* db, struct ColumnMap* col) {
-	int max_len = (int)strlen(col->header_name); // start with header length
-	for (int r = 0; r < db->size; r++) {
-		int len = get_student_field_len(&db->StudentRecord[r], col);
-		if (len > max_len) max_len = len;
-	}
-	return max_len;
-}
-
-// Main update_width function
-void update_width(struct Database* db, int row_idx, CmdAction action) {
-	if (!db || !db->StudentRecord || row_idx < 0) return;
-
-	for (int i = 0; i < db->column_count; i++) {
-		struct ColumnMap* col = &db->columns[i];
-		int old_width = col->max_width;
-		int row_len = 0;
-
-		// Only compute row_len for INSERT or UPDATE (existing row)
-		if (action != CMD_DELETE && row_idx < db->size) {
-			row_len = get_student_field_len(&db->StudentRecord[row_idx], col);
-		}
-		////printf("[DEBUG] Column %d (%s): old_width=%d, row_len=%d\n",
-		//	i, col->header_name, old_width, row_len);
-		if (action == CMD_INSERT) {
-			if (row_len > col->max_width)
-				col->max_width = row_len;
-			//printf("[DEBUG] New width after INSERT: %d\n", col->max_width);
-		}
-		else if (action == CMD_UPDATE) {
-			if (row_len > col->max_width) {
-				col->max_width = row_len;
-			}
-			else if (old_width == col->max_width) {
-				col->max_width = recalc_column_max(db, col);
-			}
-			//printf("[DEBUG] New width after UPDATE: %d\n", col->max_width);
-		}
-		else if (action == CMD_DELETE) {
-			col->max_width = recalc_column_max(db, col);
-			//printf("[DEBUG] New width after DELETE: %d\n", col->max_width);
-		}
-	}
 }
 
 bool help_fn(char* context) {

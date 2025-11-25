@@ -249,17 +249,6 @@ float validate_mark(char* mark, int row_number, CmdAction cmd) {
 	return mark_value;
 }
 
-// for use in INSERT, UPDATE, DELETE (these change datapoints)
-void recalc_col_widths(struct Database* StudentDB, struct Student* recordAdded, struct Student* recordToDelete) {
-	// if recordAdded is not NULL, we
-	
-	if (StudentDB == NULL || StudentDB->columns == NULL) {
-		return;	//no change
-	}
-
-	
-}
-
 int parse_headers(char* header_line, struct Database* StudentDB) {
 	clean_input(header_line);
 	char header_line_copy[50];
@@ -545,6 +534,61 @@ struct Database* load_data(FILE *file) {
 	return StudentDB;
 }
 
+void print_headers(struct Database* StudentDB) {
+	for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
+		printf("%s", StudentDB->columns[column_index].header_name);
+		int filler_width = StudentDB->columns[column_index].max_width - strlen(StudentDB->columns[column_index].header_name);
+		printf("%*s\t", filler_width, "");
+	}
+	printf("\n");
+}
+
+void print_datarow(struct Database* StudentDB, int student_index) {
+	struct Student* record = StudentDB->StudentRecord;
+	// for each column in the row
+	for (int column_index = 0; column_index < StudentDB->column_count; column_index++) {
+		int datapoint_width = 0;
+		char mark_str[10];
+
+		switch (StudentDB->columns[column_index].column_id) {
+		case COL_ID:
+			printf("%d", record[student_index].id);
+			// ID are fixed to 7 digits, so no extra spaces here
+			//printf("%*s", StudentDB->columns[column_index].max_width - strlen(record[student_index].id), "");
+			datapoint_width = 7;	// 7 digit id
+			break;
+		case COL_NAME:
+			printf("%s", record[student_index].name);
+			//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].name)), "");
+			datapoint_width = strlen(record[student_index].name);
+			break;
+		case COL_PROGRAMME:
+			printf("%s", record[student_index].programme);
+			//printf("%*s", (StudentDB->columns[column_index].max_width) - (strlen(record[student_index].programme)), "");
+			datapoint_width = strlen(record[student_index].programme);
+			break;
+		case COL_MARK:
+			printf("%.1f", record[student_index].mark);	// %.1f below cuz %f gives smth like 0.000000 (width becomes too high)
+			sprintf_s(mark_str, sizeof(mark_str), "%.1f", record[student_index].mark);
+			datapoint_width = strlen(mark_str);
+
+			// Mark has a max possible length of 5 (100.0)
+			break;
+		case COL_OTHER:	// safety net	(not printing the value cuz im currently not storing those vals)
+			printf("N/A");
+			datapoint_width = 3;
+			break;
+		}
+
+		printf("%*s", (StudentDB->columns[column_index].max_width - datapoint_width), "");	// add spaces to align columns in print
+
+		if (column_index != StudentDB->column_count - 1) {//-1 because column_index starts from 0
+			printf("\t");	// \t unless end of line, though doesnt rly matter (inputs are stripped anyway)
+		}
+	}
+	printf("\n");
+}
+
 void free_database(struct Database* db) {
 	if (db != NULL) {
 		if (db->StudentRecord != NULL) {
@@ -557,42 +601,70 @@ void free_database(struct Database* db) {
 	}
 }
 
-// Jaison addition
-// Duplicate ColumnMap
-struct ColumnMap* cpyColumnMap(const struct ColumnMap* src, int count) {
-	if (src == NULL || count <= 0) {
-		return NULL;
+// Get string length of a student field based on column
+int get_student_field_len(struct Student* s, struct ColumnMap* col) {
+	char buf[32];
+	switch (col->column_id) {
+	case COL_ID:
+		sprintf_s(buf, sizeof(buf), "%d", s->id);
+		return (int)strlen(buf);
+	case COL_NAME:
+		return (int)strlen(s->name);
+	case COL_PROGRAMME:
+		return (int)strlen(s->programme);
+	case COL_MARK:
+		sprintf_s(buf, sizeof(buf), "%.1f", s->mark);
+		return (int)strlen(buf);
+	default:
+		return 0;
 	}
-	struct ColumnMap* dest = malloc(count * sizeof(struct ColumnMap));
-	if (dest == NULL) return NULL;
-
-	for (int i = 0; i < count; i++) {
-		dest[i].column_id = src[i].column_id;
-		strncpy_s(dest[i].header_name, sizeof(src->header_name), src[i].header_name, _TRUNCATE);
-		dest[i].max_width = src[i].max_width;
-	}
-	return dest;
 }
 
-// Duplicate Database details (excluding StudentRecord)
-struct Database* cpyDatabaseDetails(const struct Database* src, struct Database* dest) {
-		if (src == NULL || dest == NULL) {
-		return NULL;
+// Recalculate max width for a specific column
+int recalc_column_max(struct Database* db, struct ColumnMap* col) {
+	int max_len = (int)strlen(col->header_name); // start with header length
+	for (int r = 0; r < db->size; r++) {
+		int len = get_student_field_len(&db->StudentRecord[r], col);
+		if (len > max_len) max_len = len;
 	}
-	strncpy_s(dest->databaseName, sizeof(dest->databaseName), src->databaseName, _TRUNCATE);
-	strncpy_s(dest->authors, sizeof(dest->authors), src->authors, _TRUNCATE);
-	strncpy_s(dest->tableName, sizeof(dest->tableName), src->tableName, _TRUNCATE);
-	strncpy_s(dest->filepath, sizeof(dest->filepath), src->filepath, _TRUNCATE);
-	dest->capacity = src->capacity;
-	dest->column_count = src->column_count;
-	dest->columns = cpyColumnMap(src->columns, src->column_count);
-	return dest;
+	return max_len;
 }
 
+// Main update_width function
+void update_width(struct Database* db, int row_idx, CmdAction action) {
+	if (!db || !db->StudentRecord || row_idx < 0) return;
 
-// INSERT and QUERY FUNCTIONS
-// Kim basic insert of student ids,name,programms and the marks into the system
-// Users are able to query the studetn via either IDs,names or programms
+	for (int i = 0; i < db->column_count; i++) {
+		struct ColumnMap* col = &db->columns[i];
+		int old_width = col->max_width;
+		int row_len = 0;
+
+		// Only compute row_len for INSERT or UPDATE (existing row)
+		if (action != CMD_DELETE && row_idx < db->size) {
+			row_len = get_student_field_len(&db->StudentRecord[row_idx], col);
+		}
+		////printf("[DEBUG] Column %d (%s): old_width=%d, row_len=%d\n",
+		//	i, col->header_name, old_width, row_len);
+		if (action == CMD_INSERT) {
+			if (row_len > col->max_width)
+				col->max_width = row_len;
+			//printf("[DEBUG] New width after INSERT: %d\n", col->max_width);
+		}
+		else if (action == CMD_UPDATE) {
+			if (row_len > col->max_width) {
+				col->max_width = row_len;
+			}
+			else if (old_width == col->max_width) {
+				col->max_width = recalc_column_max(db, col);
+			}
+			//printf("[DEBUG] New width after UPDATE: %d\n", col->max_width);
+		}
+		else if (action == CMD_DELETE) {
+			col->max_width = recalc_column_max(db, col);
+			//printf("[DEBUG] New width after DELETE: %d\n", col->max_width);
+		}
+	}
+}
 
 // Function to add a new student to the database
 bool add_student(struct Student newStudent) {
@@ -652,45 +724,6 @@ bool add_student(struct Student newStudent) {
 	/*printf("CMS: Successfully added new student (ID=%d, Name=%s, Programme=%s, Mark=%.1f)\n",
 		newStudent.id, newStudent.name, newStudent.programme, newStudent.mark);*/
 	return true;
-}
-
-// Function to search for a student by ID, name, or programme
-void query_student(const char* keyword) {
-	struct Database* db = get_database();
-	if (db == NULL) {
-		printf("CMS: Please OPEN the database first.\n");
-		return;
-	}
-
-	char lowered[100];
-	strncpy_s(lowered, sizeof(lowered), keyword, _TRUNCATE);
-	for (int i = 0; lowered[i]; i++) lowered[i] = tolower(lowered[i]);
-
-	bool found = false;
-
-	for (int i = 0; i < db->size; i++) {
-		char name[100], programme[100];
-		strncpy_s(name, sizeof(name), db->StudentRecord[i].name, _TRUNCATE);
-		strncpy_s(programme, sizeof(programme), db->StudentRecord[i].programme, _TRUNCATE);
-		for (int j = 0; name[j]; j++) name[j] = tolower(name[j]);
-		for (int j = 0; programme[j]; j++) programme[j] = tolower(programme[j]);
-
-		char id_str[20];
-		sprintf_s(id_str, sizeof(id_str), "%d", db->StudentRecord[i].id);
-
-		if (strstr(name, lowered) || strstr(programme, lowered) || strstr(id_str, lowered)) {
-			printf("ID: %d | Name: %s | Programme: %s | Mark: %.1f\n",
-				db->StudentRecord[i].id,
-				db->StudentRecord[i].name,
-				db->StudentRecord[i].programme,
-				db->StudentRecord[i].mark);
-			found = true;
-		}
-	}
-
-	if (!found) {
-		printf("CMS: No records found for \"%s\".\n", keyword);
-	}
 }
 
 bool save_database(struct Database* db, const char* filepath) {

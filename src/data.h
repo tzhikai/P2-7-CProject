@@ -57,19 +57,15 @@ float validate_mark(char* mark, int row_number, CmdAction cmd);
 int parse_headers(char* header_line, struct Database* StudentDB);
 int parse_datarow(char* data_line, struct Database* StudentDB, struct Student* current_student, int row_number);
 
-// jaison
-struct ColumnMap* cpyColumnMap(const struct ColumnMap* src, int count);
-struct Database* cpyDatabaseDetails(const struct Database* src, struct Database* dest);
+void print_headers(struct Database* StudentDB);
+void print_datarow(struct Database* StudentDB, int student_index);
 
-// hy
-struct Summary {
-	float average;
-	float highest;
-	float lowest;
-	int highestIndex;
-	int lowestIndex;
-};
 
+int get_student_field_len(struct Student* s, struct ColumnMap* col);
+int recalc_column_max(struct Database* db, struct ColumnMap* col);
+void update_width(struct Database* db, int row_idx, CmdAction action);
+
+bool add_student(struct Student newStudent);
 bool save_database(struct Database* db, const char* filepath);
 
 #endif // !DATA_H
