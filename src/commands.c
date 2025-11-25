@@ -848,28 +848,34 @@ void print_summary(struct Database* db) {
 			lowestIndex = i;
 		}
 	}
+
+	int mark_col = get_column(COL_MARK);
+	char mark_header[20] = "";
+	strncpy_s(mark_header, sizeof(mark_header), db->columns[mark_col].header_name, _TRUNCATE);
+
+	printf("CMS: Summary Statistics\n");
+
 	// Exception handling for no valid marks in database
 	if (validCount == 0) {
-		printf("CMS: Summary Statistics\n");
-		printf("No valid marks to summarize (all marks are negative).\n");
+		
+		printf("No valid %s to summarise.\n", mark_header);
 		return;
 	}
 	// Gets average of non invalid marks
 	float average = total / validCount;
 
-	printf("CMS: Summary Statistics\n");
 	printf("Total number of students: %d\n", db->size);
 	// Only displays valid-mark count if some marks were invalid
 	if (db->size != validCount) {
-		printf("Total number of students with valid marks: %d\n", validCount);
+		printf("Total number of students with valid %s: %d\n", mark_header, validCount);
 	}
-	printf("Average mark: %.2f\n", average);
+	printf("Average %s: %.2f\n",mark_header, average);
 
-	printf("Highest mark: %.2f (%s)\n",
-		highest, db->StudentRecord[highestIndex].name);
+	printf("Highest %s: %.2f (%s)\n",
+		mark_header, highest, db->StudentRecord[highestIndex].name);
 
-	printf("Lowest mark: %.2f (%s)\n",
-		lowest, db->StudentRecord[lowestIndex].name);
+	printf("Lowest %s: %.2f (%s)\n",
+		mark_header, lowest, db->StudentRecord[lowestIndex].name);
 }
 
 // Call summary function

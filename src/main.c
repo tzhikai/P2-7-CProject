@@ -11,7 +11,7 @@
 static void readDisclaimer() {
 	FILE* file = fopen("src\\DISCLAIMER.txt", "r");
 	if (file == NULL) {
-		printf("The Disclaimer is missing.\nGroup P2_7 comprising of members:\nTan Zhi Kai\nLee Hong Yih\nKim Beom Su\nJaison Tan\n\nswears that we do not cheat or plagiarise others' works in the making of this program.\n");
+		printf("The Disclaimer is missing.\nGroup P2_7 comprising of members:\nTan Zhi Kai\nLee Hong Yih\nKim Beom Su\nJaison Tan\n\nswears that we did not cheat or plagiarise others' works in the making of this program.\n");
 		return;
 	}
 

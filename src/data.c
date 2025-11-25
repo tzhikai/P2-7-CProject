@@ -118,13 +118,13 @@ int validate_id(char* id, int row_number, struct Database* StudentDB, CmdAction 
 	// printing out the error message (if any)
 	if (cmd == CMD_INSERT || cmd == CMD_OPEN) {
 		if (result != 0) {
-			print_error(cmd, row_number, error, true);
+			print_error(cmd, row_number, error, COL_ID);
 		}
 	}
 	else if (cmd == CMD_UPDATE || cmd == CMD_DELETE) {
 		if (result != 2) {
 			snprintf(error, sizeof(error), "ID \"%d\" is not in use", id_value);
-			print_error(cmd, row_number, error, true);
+			print_error(cmd, row_number, error, COL_ID);
 		}
 	}
 
@@ -177,7 +177,7 @@ int validate_name(char* name, int row_number, CmdAction cmd) {
 		char error[50];
 		snprintf(error, sizeof(error), "\"%s\" contains no valid characters", name_copy);
 
-		print_error(cmd, row_number, error, false);
+		print_error(cmd, row_number, error, COL_NAME);
 
 		strncpy_s(name, sizeof(name), "N/A", _TRUNCATE);
 		return 1;
@@ -206,7 +206,7 @@ int validate_programme(char* programme, int row_number, CmdAction cmd) {
 		char error[50];
 		snprintf(error, sizeof(error), "%s \"%s\" is not valid", db->columns[col_id].header_name, programme);
 
-		print_error(cmd, row_number, error, false);
+		print_error(cmd, row_number, error, COL_PROGRAMME);
 
 		strncpy_s(programme, sizeof(programme), "N/A", _TRUNCATE);	// change to N/A if not valid
 		return 1;
@@ -239,7 +239,7 @@ float validate_mark(char* mark, int row_number, CmdAction cmd) {
 	}
 
 	if (result != 0.0) {
-		print_error(cmd, row_number, error, false);
+		print_error(cmd, row_number, error, COL_MARK);
 		return result;
 	}
 
@@ -454,6 +454,8 @@ struct Database* load_data(FILE *file) {
 	int line_counter = 0;
 	char line_buffer[255];
 	int student_index = 0;
+	int rows_skipped = 0;	// rows_loaded would be size - rows_skipped
+	int rows_defaulted = 0;
 
 	while (fgets(line_buffer, sizeof(line_buffer), file)) {
 		//printf("Line: %s\n", line_buffer);
@@ -509,9 +511,16 @@ struct Database* load_data(FILE *file) {
 
 		if (parse_datarow(line_buffer, StudentDB, &StudentDB->StudentRecord[student_index], line_counter - 5)) { //line_counter - 5 cuz row 6 is first data row
 			//printf("Error parsing data row at line %d\n", line_counter);
+			rows_skipped++;
 			continue;	// irreparable error (id invalid)
 		}
 		else {
+			struct Student curr_student = StudentDB->StudentRecord[student_index];
+			if (_stricmp(curr_student.name, "N/A") == 0 ||
+				_stricmp(curr_student.programme, "N/A") == 0 ||
+				curr_student.mark == -1.0) {
+				rows_defaulted++;
+			}
 			/*printf("Successfully read student %d: ID=%d, Name=%s, Programme=%s, Mark=%.1f\n",
 			student_index,
 			StudentDB->StudentRecord[student_index].id,
@@ -527,6 +536,12 @@ struct Database* load_data(FILE *file) {
 
 	//StudentDB->size = student_index;
 
+	printf("Open Summary:\n");
+	printf("Total rows in file: %d\n", line_counter - 5);	// first 5 rows not data
+	printf("Total rows skipped: %d\n", rows_skipped);
+	printf("Total rows loaded into database: %d\n", StudentDB->size);
+	printf("Total rows loaded with default values in at least 1 column: %d\n", rows_defaulted);
+	
 	return StudentDB;
 }
 

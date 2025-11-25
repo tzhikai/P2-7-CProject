@@ -91,7 +91,7 @@ int get_column(Columns col_id) {
 	return -1;
 }
 
-void print_error(CmdAction cmd, int row_number, char error[], bool is_id) {
+void print_error(CmdAction cmd, int row_number, char error[], Columns col_type) {
 	if (cmd == CMD_OPEN && row_number != -1) {
 		printf("Row %d, ", row_number);
 	}
@@ -99,12 +99,15 @@ void print_error(CmdAction cmd, int row_number, char error[], bool is_id) {
 	printf("%s.", error);
 
 	if (cmd == CMD_OPEN) {
-		if (is_id) {	// primary key got no excuse
+		if (col_type == COL_ID) {	// primary key got no excuse
 			printf(" Skipping row.");
+		}
+		else if (col_type == COL_MARK) {
+			printf(" Replaced with \"-1.0\".");
 		}
 		else {			// non primary key can just tolerate
 			printf(" Replaced with \"N/A\".");
-		}
+		}	
 	}
 	else {	// not open_fn
 		printf(" Please try again.");
