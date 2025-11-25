@@ -31,13 +31,13 @@ int main() {
 	printf("Booting up . . .\n");
 	readDisclaimer();
 
-	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+	/*_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
 	_CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDOUT);
 	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
 	_CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDOUT);
 	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
 	_CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDOUT);
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);*/
 
 	create_undostack();
 
@@ -75,6 +75,6 @@ int main() {
 	}
 
 	printf("Closing program ... bye!");
-	_CrtDumpMemoryLeaks();
+	/*_CrtDumpMemoryLeaks();*/
 	return 0;
 }

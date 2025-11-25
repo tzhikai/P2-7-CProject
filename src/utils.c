@@ -383,7 +383,7 @@ void insert_undostack(char* command) {
 	}
 
 	if (undos->pause_inserts) {
-		printf("Dont insert undo command into undostack.\n");
+		//printf("Dont insert undo command into undostack.\n");
 		return;
 	}
 

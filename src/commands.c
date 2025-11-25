@@ -939,10 +939,14 @@ bool update_fn(char* context) {
 	struct Student* s = &db->StudentRecord[idx];
 	struct Student s_backup = *s;
 
-	printf("\nCMS: Record found.\n");
+	struct UndoStack* undos = get_undostack();
+	if (!undos->pause_inserts) {
+		printf("\nCMS: Record found.\n");
+		print_headers(db);
+		print_datarow(db, idx);
+	}
 
-	print_headers(db);
-	print_datarow(db, idx);
+	
 
 	// If extrainput header-value pairs exist, apply them
 
@@ -1042,6 +1046,10 @@ bool update_fn(char* context) {
 				switch (db->columns[i].column_id) {
 					case COL_NAME:
 						if (!validate_name(buf, idx, CMD_UPDATE)) {
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), " ", _TRUNCATE);
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), db->columns[i].header_name, _TRUNCATE);
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), "=", _TRUNCATE);
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), s->name, _TRUNCATE);
 							strncpy_s(s->name, sizeof(s->name), buf, _TRUNCATE);
 							valid_input = 1;
 						}
@@ -1049,14 +1057,25 @@ bool update_fn(char* context) {
 
 					case COL_PROGRAMME:
 						if (!validate_name(buf, idx, CMD_UPDATE) && !validate_programme(buf, idx, CMD_UPDATE)) {
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), " ", _TRUNCATE);
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), db->columns[i].header_name, _TRUNCATE);
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), "=", _TRUNCATE);
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), s->programme, _TRUNCATE);
 							strncpy_s(s->programme, sizeof(s->programme), buf, _TRUNCATE);
 							valid_input = 1;
 						}
 						break;
 
 					case COL_MARK: {
+						char mark_str[20];
 						float mark = validate_mark(buf, idx, CMD_UPDATE); // returns -1 if invalid
 						if (mark >= 0.0f) {
+							snprintf(mark_str, sizeof(mark_str), "%.1f", s->mark);
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), " ", _TRUNCATE);
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), db->columns[i].header_name, _TRUNCATE);
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), "=", _TRUNCATE);
+							strncat_s(undo_fields_all, sizeof(undo_fields_all), mark_str, _TRUNCATE);
+
 							s->mark = mark;
 							valid_input = 1;
 						}
@@ -1244,7 +1263,7 @@ bool insert_fn(char* context) {
 	update_width(db, db->size - 1, CMD_INSERT);
 
 	char undo_command[100];
-	snprintf(undo_command, sizeof(undo_command), "DELETE %d", newStudent.id);
+	snprintf(undo_command, sizeof(undo_command), "DELETE ID=%d", newStudent.id);
 
 	insert_undostack(undo_command);
 
