@@ -189,6 +189,9 @@ int extract_extrainput_id(int* id_ptr, char* extrainput, struct Database* Studen
 		return 0;
 	}
 
+	if (cmd == CMD_DELETE) { // DELETE oneline does not have further fields like Name or Programme to find, can just return after finding id
+		return 0;
+	}
 
 	if (cmd_ptr == NULL) {
 		//printf("post loop is NULL\n");

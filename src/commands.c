@@ -185,12 +185,9 @@ bool delete_fn(char* context) {
 		int id = 0;
 		int* id_ptr = &id;
 
-		struct HeaderValuePair hvp_array[10];
-		memset(hvp_array, 0, sizeof(hvp_array));
-
-		int hvpair_count = 0;
 		if (context != NULL && context[0] != '\0') {
-			hvpair_count = extract_extrainput_id(id_ptr, context, StudentDB, hvp_array, true); // false for DELETE
+			extract_extrainput_id(id_ptr, context, StudentDB, NULL, CMD_DELETE);	
+			// NULL for the HeaderValuePair struct input, cuz DELETE wouldnt use it
 		}
 
 		char idbuffer[10] = "";
@@ -301,10 +298,10 @@ bool delete_fn(char* context) {
 					return false;
 				}
 
-				// Initialize NEWdb properly
+				// initialise NEWdb
 				memset(NEWdb, 0, sizeof(struct Database));
 
-				// Copy basic details (don't use the flawed cpyDatabaseDetails)
+				// copy pasting over the details
 				strncpy_s(NEWdb->databaseName, sizeof(NEWdb->databaseName),
 					StudentDB->databaseName, _TRUNCATE);
 				strncpy_s(NEWdb->authors, sizeof(NEWdb->authors),
@@ -328,7 +325,7 @@ bool delete_fn(char* context) {
 				memcpy(NEWdb->columns, StudentDB->columns,
 					sizeof(struct ColumnMap) * StudentDB->column_count);
 
-				// Allocate student records - CRITICAL FIX: handle size-1 = 0 case
+				// Allocate student records
 				if (NEWdb->size > 0) {
 					NEWdb->StudentRecord = malloc(sizeof(struct Student) * NEWdb->size);
 					if (NEWdb->StudentRecord == NULL) {
@@ -397,8 +394,7 @@ bool delete_fn(char* context) {
 				free_database(StudentDB);
 				set_database(NEWdb);
 				
-				
-
+			
 				struct Database* db = get_database();
 				if (NEWdb->size > 0) {	// doesnt run if theres no records after deleting
 					update_width(db, indexdelete, CMD_DELETE);
