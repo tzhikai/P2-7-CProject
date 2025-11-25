@@ -798,11 +798,12 @@ bool undo_fn(char* context){
 	return true;
 }
 
-void print_summary(struct Database* db) {
+bool summary_fn(char* context) {
 	// Validate database
+	struct Database* db = get_database();
 	if (db == NULL || db->size == 0) {
 		printf("CMS: No Database loaded. Please OPEN a file first.\n");
-		return;
+		return false;
 	}
 	// Initialize tracking variables
 	float highest = -1;
@@ -842,7 +843,7 @@ void print_summary(struct Database* db) {
 
 	if (mark_col == -1) {
 		printf("CMS: No %s column found in file. Unable to calculate summary.\n", mark_header);
-		return;
+		return false;
 	}
 
 	printf("CMS: Summary Statistics\n");
@@ -851,7 +852,7 @@ void print_summary(struct Database* db) {
 	if (validCount == 0) {
 		
 		printf("No valid %s to summarise.\n", mark_header);
-		return;
+		return true;
 	}
 	// Gets average of non invalid marks
 	float average = total / validCount;
@@ -868,11 +869,7 @@ void print_summary(struct Database* db) {
 
 	printf("Lowest %s: %.2f (%s)\n",
 		mark_header, lowest, db->StudentRecord[lowestIndex].name);
-}
 
-bool summary_fn(char* context) {
-	struct Database* db = get_database();
-	print_summary(db);
 	return true;
 }
 
