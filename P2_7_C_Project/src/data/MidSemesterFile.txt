@@ -1,0 +1,5 @@
+Database Name: MidSemesterUpdates
+Authors: Handsome Oran Devilly
+
+Table Name: Mid_Sem_Marks
+ID	NAME	PROGRAMME	MARK
