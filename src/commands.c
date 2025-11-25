@@ -562,7 +562,7 @@ bool newfile_fn(char* context) {
 
 		if (cnfm_int == 2 && StudentDB == NULL) {
 			printf("CMS: No Database loaded. Please OPEN a file first.\n");
-			cnfminit = 0; //break
+			cnfminit = 0; //breaks
 			return false;
 		}
 
@@ -609,24 +609,69 @@ bool newfile_fn(char* context) {
 			fprintf(file, "Table Name: %s\n", tablename);
 
 			if (cnfm_int == 1) { // New Empty Text File
-				fprintf(file, "ID\tNAME\tPROGRAMME\tMARK\n");
+				if (StudentDB != NULL) {
+					// Headers
+					for (int c = 0; c < StudentDB->column_count; c++) {
+						if (StudentDB->columns[c].column_id == COL_OTHER) { //not saving this
+							continue;
+						}
+
+						fprintf(file, "%s", StudentDB->columns[c].header_name);
+						if (c < StudentDB->column_count - 1)
+							fprintf(file, "\t");
+					}
+					fprintf(file, "\n");
+				}
+				else {
+					fprintf(file, "ID\tNAME\tPROGRAMME\tMARK\n");
+				}
 			}
 			else if (cnfm_int == 2) {
+				int saved_headers = 0;
 				if (StudentDB != NULL) {
-					for (int i = 0; i < StudentDB->column_count; i++) {
-						fprintf(file, "%s", StudentDB->columns[i].header_name);
-						if (i < StudentDB->column_count - 1)
+					// Headers
+					for (int c = 0; c < StudentDB->column_count; c++) {
+						if (StudentDB->columns[c].column_id == COL_OTHER) { //not saving this
+							continue;
+						}
+
+						fprintf(file, "%s", StudentDB->columns[c].header_name);
+						if (c < StudentDB->column_count - 1)
 							fprintf(file, "\t");
+						saved_headers++;
 					}
 					fprintf(file, "\n");
 
 					// Records
+					int saved_cols = 0;
+					// Loop thru records first
 					for (int i = 0; i < StudentDB->size; i++) {
-						fprintf(file, "%d\t%s\t%s\t%.1f\n",
-							StudentDB->StudentRecord[i].id,
-							StudentDB->StudentRecord[i].name ? StudentDB->StudentRecord[i].name : "N/A",
-							StudentDB->StudentRecord[i].programme ? StudentDB->StudentRecord[i].programme : "N/A",
-							StudentDB->StudentRecord[i].mark);
+						saved_cols = 0;
+						struct Student curr_student = StudentDB->StudentRecord[i];
+						// then loop thru the columns in order
+						for (int c = 0; c < StudentDB->column_count; c++) {
+							switch (StudentDB->columns[c].column_id) {
+							case COL_ID:
+								fprintf(file, "%d", curr_student.id);
+								break;
+							case COL_NAME:
+								fprintf(file, "%s", curr_student.name);
+								break;
+							case COL_PROGRAMME:
+								fprintf(file, "%s", curr_student.programme);
+								break;
+							case COL_MARK:
+								fprintf(file, "%.1f", curr_student.mark);
+								break;
+							case COL_OTHER: //not saving this
+								continue;
+							}
+							saved_cols++;
+							if (saved_cols != saved_headers) {	// = if not last col
+								fprintf(file, "\t");
+							}
+						}
+						fprintf(file, "\n");
 					}
 				}
 				else {
@@ -634,7 +679,7 @@ bool newfile_fn(char* context) {
 				}
 			}
 			else {
-				printf("This Error shouldn't even be possible because an earlier check should have handled.\n");
+				printf("This Error shouldn't even be possible because an earlier check should have handled it.\n");
 				newfile = 0;
 				cnfminit = 0;
 				break;
@@ -642,8 +687,8 @@ bool newfile_fn(char* context) {
 			fclose(file);
 			printf("CMS: New database file %s created successfully.\n", filename);
 			newfile = 0;
+			cnfminit = 0;
 		}
-		cnfminit = 0;
 		return true;
 	}
 }
