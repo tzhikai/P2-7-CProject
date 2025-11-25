@@ -70,4 +70,6 @@ struct Summary {
 	int lowestIndex;
 };
 
+bool save_database(struct Database* db, const char* filepath);
+
 #endif // !DATA_H

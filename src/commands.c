@@ -97,7 +97,14 @@ bool showall_fn(char* context) {
 	}
 
 	//printf("%s and %s\n", StudentDB->databaseName, StudentDB->authors);
-	printf("Here are all the records found in the table \"%s\".\n", StudentDB->tableName);
+	if (StudentDB->tableName[0]) {
+		printf("Here are all the records found in the table \"%s\".\n", StudentDB->tableName);
+	}
+	else {
+		printf("Here are all the records found in the table.\n");
+	}
+
+	
 
 	print_headers(StudentDB);
 	

@@ -701,29 +701,58 @@ bool save_database(struct Database* db, const char* filepath) {
 		return false;
 	}
 
-	fprintf(file, "Database Name: %s\n", db->databaseName);
-	fprintf(file, "Authors: %s\n\n", db->authors);
-	fprintf(file, "Table Name: %s\n", db->tableName);
+	fprintf(file, "Database Name: %s\n", db->databaseName[0] ? db->databaseName : "N/A");
+	fprintf(file, "Authors: %s\n\n", db->authors[0] ? db->authors : "N/A");
+	fprintf(file, "Table Name: %s\n", db->tableName[0] ? db->tableName : "N/A");
+
+	int saved_headers = 0;	// helps with \t and \n when printing rows
 
 	// Headers
 	for (int c = 0; c < db->column_count; c++) {
+		if (db->columns[c].column_id == COL_OTHER) { //not saving this
+			continue;
+		}
+
 		fprintf(file, "%s", db->columns[c].header_name);
 		if (c < db->column_count - 1)
 			fprintf(file, "\t");
+		saved_headers++;
 	}
 	fprintf(file, "\n");
 
-	// Records
+	int saved_cols = 0;
+	// Loop thru records first
 	for (int i = 0; i < db->size; i++) {
-		fprintf(file, "%d\t%s\t%s\t%.1f\n",
-			db->StudentRecord[i].id,
-			db->StudentRecord[i].name ? db->StudentRecord[i].name : "N/A",
-			db->StudentRecord[i].programme ? db->StudentRecord[i].programme : "N/A",
-			db->StudentRecord[i].mark);
+		saved_cols = 0;
+		struct Student curr_student = db->StudentRecord[i];
+		// then loop thru the columns in order
+		for (int c = 0; c < db->column_count; c++) {
+			switch (db->columns[c].column_id) {
+				case COL_ID:
+					fprintf(file, "%d", curr_student.id);
+					break;
+				case COL_NAME:
+					fprintf(file, "%s", curr_student.name);
+					break;
+				case COL_PROGRAMME:
+					fprintf(file, "%s", curr_student.programme);
+					break;
+				case COL_MARK:
+					fprintf(file, "%.1f", curr_student.mark);
+					break;
+				case COL_OTHER: //not saving this
+					continue;
+			}
+			saved_cols++;
+			if (saved_cols != saved_headers) {	// = if not last col
+				fprintf(file, "\t");
+			}
+		}
+		fprintf(file, "\n");
 
 	}
 
 	fclose(file);
-	printf("CMS: Database saved successfully to %s\n", filepath);
+	printf("The database file \"%s\" is successfully saved.\n", filepath);
 	return true;
 }

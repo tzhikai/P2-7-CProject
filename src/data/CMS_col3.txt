@@ -3,6 +3,6 @@ Authors: Datta Bays
 
 Table Name: StudentRecords
 ID	Name	Programme
-2500123	John Souls	Software Engineering	0.0
-2500456	Lenny Ovo	Computer Science	0.0
-2500789	Artie Ex	Digital Supply Chain	0.0
+2500123	John Souls	Software Engineering
+2500456	Lenny Ovo	Computer Science
+2500789	Artie Ex	Digital Supply Chain
