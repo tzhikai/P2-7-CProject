@@ -441,7 +441,7 @@ bool sort_fn(char* context) {
 	struct Database* StudentDB = get_database(); //struct Student and function get_database() is in data.c
 	//int student_count = studentcount(); Old code 
 
-	if (StudentDB == NULL) {
+	if (StudentDB == NULL || StudentDB->size == 0) {
 		printf("CMS: No Database loaded. Please OPEN a file first.\n");
 		return false;
 	}
